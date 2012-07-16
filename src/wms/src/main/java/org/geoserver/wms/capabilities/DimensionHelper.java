@@ -122,7 +122,7 @@ abstract class DimensionHelper {
         DimensionInfo timeInfo = null;
         DimensionInfo elevInfo = null;
         Map<String, DimensionInfo> customDimensions = new HashMap<String, DimensionInfo>();
-        AbstractGridCoverage2DReader reader = null;
+//        AbstractGridCoverage2DReader reader = null;
         
         for (Map.Entry<String, Serializable> e : cvInfo.getMetadata().entrySet()) {
             String key = e.getKey();
@@ -147,6 +147,10 @@ abstract class DimensionHelper {
             return;
         }
         
+        if (cvInfo == null)
+            throw new ServiceException("Unable to acquire coverage resource for layer: "
+                    + layer.getName());
+
         Catalog catalog = cvInfo.getCatalog();
         if (catalog == null)
             throw new ServiceException("Unable to acquire catalog resource for layer: "
@@ -157,12 +161,13 @@ abstract class DimensionHelper {
             throw new ServiceException("Unable to acquire coverage store resource for layer: "
                     + layer.getName());
 
+        AbstractGridCoverage2DReader reader = null;
         try {
             reader = (AbstractGridCoverage2DReader) catalog.getResourcePool()
                     .getGridCoverageReader(csinfo, GeoTools.getDefaultHints());
         } catch (Throwable t) {
-                 LOGGER.log(Level.SEVERE, "Unable to acquire a reader for this coverage with format: "
-                                 + csinfo.getFormat().getName(), t);
+        	 LOGGER.log(Level.SEVERE, "Unable to acquire a reader for this coverage with format: "
+        			 + csinfo.getFormat().getName(), t);
         }
         if (reader == null) {
             throw new ServiceException("Unable to acquire a reader for this coverage with format: "
@@ -525,7 +530,7 @@ abstract class DimensionHelper {
             element("Dimension", metadata, dim);
         }
     }
-
+    
     static class ISO8601Formatter {
 
         private final GregorianCalendar cal = new GregorianCalendar(TimeZone.getTimeZone("GMT"));
