@@ -6,11 +6,17 @@ package org.geoserver.wfs.response;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.util.List;
 
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 
+import net.sf.json.JSONException;
+
+import org.apache.commons.io.IOUtils;
 import org.geoserver.config.GeoServer;
 import org.geoserver.ows.DefaultServiceExceptionHandler;
 import org.geoserver.ows.Request;
@@ -18,6 +24,9 @@ import org.geoserver.ows.util.OwsUtils;
 import org.geoserver.ows.util.ResponseUtils;
 import org.geoserver.platform.ServiceException;
 import org.geoserver.wfs.WFSInfo;
+import org.geoserver.wfs.json.JSONType;
+
+import com.thoughtworks.xstream.io.json.JsonWriter;
 
 /**
  * Handles a wfs service exception by producing an exception report.
@@ -44,13 +53,84 @@ public class WfsExceptionHandler extends DefaultServiceExceptionHandler {
     /**
      * Encodes a ogc:ServiceExceptionReport to output.
      */
-    public void handleServiceException(ServiceException e, Request request) {
-        verboseExceptions = getInfo().getGeoServer().getSettings().isVerboseExceptions();
-        if ("1.0.0".equals(request.getVersion())) {
-            handle1_0(e, request.getHttpResponse());
-        } else {
-            super.handleServiceException(e, request);
+    public void handleServiceException(ServiceException exception, Request request) {
+
+        boolean verbose=gs.getSettings().isVerboseExceptions();
+    	String charset=gs.getSettings().getCharset();
+    	// first of all check what kind of exception handling we must perform
+        final String exceptions;
+        try {
+            exceptions = (String) request.getKvp().get("EXCEPTIONS");
+            if (exceptions == null) {
+            	// use default
+            	handleDefault(exception, request, charset, verbose);
+                return;
+            }
+        } catch (Exception e) {
+            // width and height might be missing
+            handleDefault(exception, request, charset, verbose);
+            return;
         }
+        if (JSONType.isJsonMimeType(exceptions)){
+        	// use Json format
+        	handleJsonException(exception, request, charset, verbose, false);
+        } else if (JSONType.isJsonpMimeType(exceptions)){
+        	// use JsonP format
+        	handleJsonException(exception, request, charset, verbose, true);
+        } else {
+        	handleDefault(exception,request,charset, verbose);
+        }
+        	
+    }
+    
+    private void handleDefault(ServiceException exception, Request request, String charset, boolean verbose){
+    	if ("1.0.0".equals(request.getVersion())) {
+            handle1_0(exception, request.getHttpResponse());
+        } else {
+            super.handleServiceException(exception, request);
+        }
+    }
+    
+
+    private void handleJsonException(ServiceException exception, Request request, String charset, boolean verbose, boolean isJsonp) {
+    	
+    	final HttpServletResponse response = request.getHttpResponse();
+    	response.setContentType(JSONType.jsonp);
+        // TODO: server encoding options?
+        response.setCharacterEncoding(charset);
+        
+        ServletOutputStream os = null;
+    	try {
+    		os=response.getOutputStream();
+    		if (isJsonp) {
+    			// jsonp
+    			JSONType.writeJsonpException(exception,request,os,charset,verbose);
+    		} else {
+    			// json
+    			OutputStreamWriter outWriter = null;
+    			try {
+    				outWriter = new OutputStreamWriter(os, charset);
+    				JSONType.writeJsonException(exception, request, outWriter, verbose);
+    			} finally {
+    				if (outWriter != null) {
+    	    			try {
+    	    				outWriter.flush();
+    	    			} catch (IOException ioe){}
+    					IOUtils.closeQuietly(outWriter);
+    				}
+    			}
+
+    		}
+    	} catch (Exception e){
+    		LOGGER.warning(e.getLocalizedMessage());
+    	} finally {
+    		if (os!=null){
+    			try {
+    				os.flush();
+    			} catch (IOException ioe){}
+    			IOUtils.closeQuietly(os);
+    		}
+    	}
     }
 
     public void handle1_0(ServiceException e, HttpServletResponse response) {
