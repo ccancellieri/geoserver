@@ -14,11 +14,13 @@ import java.util.logging.Logger;
 
 import net.sf.json.JSONException;
 import net.sf.json.util.JSONBuilder;
+import net.sf.json.xml.JSONTypes;
 
 import org.apache.commons.io.IOUtils;
 import org.geoserver.ows.Dispatcher;
 import org.geoserver.ows.Request;
 import org.geoserver.platform.ServiceException;
+import org.geoserver.wfs.json.JSONType;
 import org.geoserver.wms.DescribeLayerRequest;
 import org.geoserver.wms.WMS;
 import org.geotools.data.ows.LayerDescription;
@@ -43,44 +45,6 @@ import com.thoughtworks.xstream.io.json.JsonWriter;
 public class GeoJSONDescribeLayerResponse extends DescribeLayerResponse {
 	
     
-    /**
-     * The MIME type of the format this response produces, supported formats are:
-     * <ul>
-     *  <li>application/json</li>
-	 *  <li>text/javascript</li>
-     * </ul>
-     */
-	private enum JSONType {
-		JSONP,
-		JSON;
-		
-		public final static String CALLBACK_FUNCTION = "paddingDescribeLayerOutput";
-		
-		private static String json="application/json";
-		private static String jsonp="text/javascript";
-		
-		public static JSONType getType(String mime){
-			if (json.equalsIgnoreCase(mime)){
-				return JSON;
-			} else if (jsonp.equalsIgnoreCase(mime)){
-				return JSONP;
-			} else {
-				return null; //not valid representation
-			}
-		}
-		
-		public String getMimeType(){
-			switch (this){
-			case JSON:
-				return json;
-			case JSONP:
-				return jsonp;
-			default:
-				return null;
-			}
-		}
-	}
-
     /** A logger for this class. */
     protected static final Logger LOGGER = Logging.getLogger(GeoJSONDescribeLayerResponse.class);
     
@@ -99,7 +63,7 @@ public class GeoJSONDescribeLayerResponse extends DescribeLayerResponse {
 			final String outputFormat) {
 		super(outputFormat);
 		this.wms = wms;
-		this.type=JSONType.getType(outputFormat);
+		this.type=JSONType.getJSONType(outputFormat);
 		if (type==null)
 			throw new IllegalArgumentException("Not supported mime type for:"+outputFormat);
 	}
@@ -154,8 +118,7 @@ public class GeoJSONDescribeLayerResponse extends DescribeLayerResponse {
 			DescribeLayerModel description) throws IOException {
 
 		try {
-//			final JSONBuilder jsonWriter = new JSONBuilder(outWriter);
-			JsonWriter jsonWriter = new JsonWriter(outWriter);
+			final JsonWriter jsonWriter = new JsonWriter(outWriter);
 			final List<LayerDescription> layers=description.getLayerDescriptions();
 			
 			jsonWriter.startNode("WMS_DescribeLayerResponse", String.class);
@@ -185,33 +148,13 @@ public class GeoJSONDescribeLayerResponse extends DescribeLayerResponse {
 			throw serviceException;
 		}
 	}
-	
-	private static void writeLayerDescription(JSONBuilder jsonWriter, LayerDescription layer){
-		jsonWriter.value(
-					jsonWriter.key("LayerDescription")).array().
-								value(jsonWriter.object().key("name").value(layer.getName())).
-								value(jsonWriter.object().key("owsURL").value(layer.getOwsURL())).
-								value(jsonWriter.object().key("owsType").value(layer.getOwsType())).
-							endArray().
-							endObject();
-	}
-
 
 	private static String getCallbackFunction() {
 		Request request = Dispatcher.REQUEST.get();
 		if (request == null) {
 			return JSONType.CALLBACK_FUNCTION;
-		} else if (!(request.getKvp().get("FORMAT_OPTIONS") instanceof Map)) {
-			return JSONType.CALLBACK_FUNCTION;
-		}
-
-		Map<String, String> map = (Map<String, String>) request.getKvp().get(
-				"FORMAT_OPTIONS");
-		String callback = map.get("callback");
-		if (callback != null) {
-			return callback;
 		} else {
-			return JSONType.CALLBACK_FUNCTION;
+			return JSONType.getCallbackFunction(request.getKvp());
 		}
 	}
 

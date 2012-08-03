@@ -6,20 +6,13 @@ package org.geoserver.wms.describelayer;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.List;
 
-import net.opengis.wfs.FeatureCollectionType;
-
+import org.apache.commons.io.IOUtils;
 import org.geoserver.ows.Response;
-import org.geoserver.ows.util.OwsUtils;
 import org.geoserver.platform.Operation;
 import org.geoserver.platform.ServiceException;
 import org.geoserver.wms.DescribeLayer;
 import org.geoserver.wms.DescribeLayerRequest;
-import org.geoserver.wms.GetFeatureInfoRequest;
-import org.geoserver.wms.WMS;
-import org.geoserver.wms.featureinfo.GetFeatureInfoOutputFormat;
-import org.geotools.data.ows.LayerDescription;
 import org.springframework.util.Assert;
 
 /**
@@ -107,7 +100,12 @@ public abstract class DescribeLayerResponse extends Response {
         } catch (ServiceException e ) {
         	
         } finally {
-            output.flush();	
+    		if (output!=null){
+    			try {
+    				output.flush();
+    			} catch (IOException ioe){}
+    			IOUtils.closeQuietly(output);
+    		}
         }
         
     }

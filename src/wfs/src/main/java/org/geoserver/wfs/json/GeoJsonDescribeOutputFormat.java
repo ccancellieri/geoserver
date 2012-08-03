@@ -1,3 +1,7 @@
+/* Copyright (c) 2001 - 2012 TOPP - www.openplans.org. All rights reserved.
+ * This code is licensed under the GPL 2.0 license, availible at the root
+ * application directory.
+ */
 package org.geoserver.wfs.json;
 
 import java.io.BufferedWriter;
@@ -31,16 +35,7 @@ import com.vividsolutions.jts.geom.Geometry;
  */
 public class GeoJsonDescribeOutputFormat extends WFSDescribeFeatureTypeOutputFormat {
 
-    /** JSON mimetype **/
-    static final String JSON = "application/json";
-
-    /** JSONP mime type */
-    static final String JSONP = "text/javascript";
-
     static final Logger LOGGER = Logging.getLogger(GeoJsonDescribeOutputFormat.class);
-
-    /** The callback function we are proposing **/
-    public final static String CALLBACK_FUNCTION = "paddingDescribeFeatureType";
 
     public GeoJsonDescribeOutputFormat(GeoServer gs, final String mime) {
         super(gs, mime);
@@ -50,7 +45,7 @@ public class GeoJsonDescribeOutputFormat extends WFSDescribeFeatureTypeOutputFor
     protected void write(FeatureTypeInfo[] featureTypeInfos, OutputStream output,
             Operation describeFeatureType) throws IOException {
 
-        final boolean jsonp = JSONP.equalsIgnoreCase(getMimeType(featureTypeInfos, describeFeatureType));
+        final boolean jsonp = JSONType.isJsonpMimeType(getMimeType(featureTypeInfos, describeFeatureType));
 
         // prepare to write out
         Writer outWriter = new BufferedWriter(new OutputStreamWriter(output, gs.getSettings()
@@ -109,18 +104,13 @@ public class GeoJsonDescribeOutputFormat extends WFSDescribeFeatureTypeOutputFor
     private String getCallbackFunction() {
         Request request = Dispatcher.REQUEST.get();
         if(request == null) {
-            return CALLBACK_FUNCTION;
+            return JSONType.CALLBACK_FUNCTION;
         } else if(!(request.getKvp().get("FORMAT_OPTIONS") instanceof Map)) {
-            return CALLBACK_FUNCTION;
+        	return JSONType.CALLBACK_FUNCTION;
         }
         
-        Map<String, String> map = (Map<String, String>) request.getKvp().get("FORMAT_OPTIONS");
-        String callback = map.get("callback");
-        if(callback != null) {
-            return callback;
-        } else {
-            return CALLBACK_FUNCTION;
-        }
+        return JSONType.getCallbackFunction(request.getKvp());
+        
     }
 
     private static void describeProperty(String name, AttributeDescriptor ad, GeoJSONBuilder jw) {
