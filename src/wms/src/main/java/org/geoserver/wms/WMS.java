@@ -831,10 +831,9 @@ public class WMS implements ApplicationContextAware {
     			
     			if (pd.getName().getCode().equalsIgnoreCase("FILTER")){
     				final ParameterValue pv = (ParameterValue) pd.createValue();
-                    if (pv.getValue()==null) {
-                    	pv.setValue(Filter.INCLUDE);
-                    	readParameters[i] = pv;
-                    } else if (!layerFilter.equals(Filter.INCLUDE)){
+    				// if something different from the default INCLUDE filter is specified
+                    if (layerFilter!=Filter.INCLUDE) {
+                    	// override the default filter
                     	pv.setValue(layerFilter);
                     	readParameters[i] = pv;
                     }
