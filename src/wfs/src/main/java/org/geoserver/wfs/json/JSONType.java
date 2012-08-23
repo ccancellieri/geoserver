@@ -11,6 +11,8 @@ import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.util.Map;
 
+import javax.activation.MimeType;
+
 import net.sf.json.JSONException;
 
 import org.apache.commons.io.IOUtils;
@@ -40,7 +42,7 @@ public enum JSONType {
 	/**
 	 * The default value of the callback function
 	 */
-	public final static String CALLBACK_FUNCTION = "paddingDescribeLayerOutput";
+	public final static String CALLBACK_FUNCTION = "paddingOutput";
 	
 	public final static String json="application/json";
 	public final static String jsonp="text/javascript";

@@ -9,12 +9,13 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import org.geoserver.data.test.MockData;
+import org.geoserver.wfs.json.JSONType;
 import org.geoserver.wms.wms_1_1_1.GetFeatureInfoTest;
 
 public class GetFeatureInfoJSONTest extends GetFeatureInfoTest {
 
     /**
-     * Tests GML outside of expected polygon
+     * Tests JSONP outside of expected polygon
      * 
      * @throws Exception
      */
@@ -27,12 +28,12 @@ public class GetFeatureInfoJSONTest extends GetFeatureInfoTest {
         // System.out.println(result);
         assertNotNull(result);
 
-        assertTrue(result.startsWith(GeoJSONFeatureInfoOutputFormat.CALLBACK_FUNCTION));
+        assertTrue(result.startsWith(JSONType.CALLBACK_FUNCTION));
         assertTrue(result.endsWith(")\n"));
         assertTrue(result.indexOf("Green Forest") > 0);
 
         result = result.substring(0, result.length() - 2);
-        result = result.substring(GeoJSONFeatureInfoOutputFormat.CALLBACK_FUNCTION.length() + 1,
+        result = result.substring(JSONType.CALLBACK_FUNCTION.length() + 1,
                 result.length());
 
         JSONObject rootObject = JSONObject.fromObject(result);
@@ -72,7 +73,7 @@ public class GetFeatureInfoJSONTest extends GetFeatureInfoTest {
     }
 
     /**
-     * Tests GML outside of expected polygon
+     * Tests JSON outside of expected polygon
      * 
      * @throws Exception
      */

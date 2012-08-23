@@ -9,12 +9,9 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.URL;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 
 import net.sf.json.JSONException;
-import net.sf.json.util.JSONBuilder;
-import net.sf.json.xml.JSONTypes;
 
 import org.apache.commons.io.IOUtils;
 import org.geoserver.ows.Dispatcher;
@@ -29,16 +26,8 @@ import org.geotools.util.logging.Logging;
 import com.thoughtworks.xstream.io.json.JsonWriter;
 
 /**
- * A GetFeatureInfo response handler specialized in producing GML 3 data for a
- * GetFeatureInfo request.
- * 
- * <p>
- * This class does not deals directly with GML encoding. Instead, it works by
- * taking the FeatureResults produced in <code>execute()</code> and constructs a
- * <code>GetFeaturesResult</code> wich is passed to a
- * <code>GML2FeatureResponseDelegate</code>, as if it where the result of a
- * GetFeature WFS request.
- * </p>
+ * A DescribeLayer response specialized in producing Json or JsonP data for a
+ * DescribeLayer request.
  * 
  * @author carlo cancellieri
  */
@@ -53,7 +42,6 @@ public class GeoJSONDescribeLayerResponse extends DescribeLayerResponse {
      */
     private final JSONType type;
     
-
 	protected final WMS wms;
 
 	/**
@@ -68,7 +56,9 @@ public class GeoJSONDescribeLayerResponse extends DescribeLayerResponse {
 			throw new IllegalArgumentException("Not supported mime type for:"+outputFormat);
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
+	/**
+	 * Actually write the passed DescribeLayerModel on the OutputStream
+	 */
 	public void write(DescribeLayerModel layers,
 			DescribeLayerRequest request, OutputStream output)
 			throws ServiceException, IOException {
@@ -132,7 +122,8 @@ public class GeoJSONDescribeLayerResponse extends DescribeLayerResponse {
 						jsonWriter.setValue(layer.getName());
 					jsonWriter.endNode();
 					jsonWriter.startNode("owsURL",URL.class);
-						jsonWriter.setValue(layer.getOwsURL().toString());
+						URL url=layer.getOwsURL();
+						jsonWriter.setValue(url!=null?url.toString():"");
 					jsonWriter.endNode();
 					jsonWriter.startNode("owsType",String.class);
 						jsonWriter.setValue(layer.getOwsType());

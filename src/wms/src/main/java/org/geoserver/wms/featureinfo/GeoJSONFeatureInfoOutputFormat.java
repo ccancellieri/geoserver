@@ -26,6 +26,7 @@ import org.geoserver.ows.Request;
 import org.geoserver.platform.Operation;
 import org.geoserver.platform.Service;
 import org.geoserver.platform.ServiceException;
+import org.geoserver.wfs.json.JSONType;
 import org.geoserver.wfs.response.GeoJSONOutputFormat;
 import org.geoserver.wms.GetFeatureInfoRequest;
 import org.geoserver.wms.WMS;
@@ -34,7 +35,7 @@ import org.geotools.gml2.bindings.GML2EncodingUtils;
 import org.opengis.feature.type.Name;
 
 /**
- * A GetFeatureInfo response handler specialized in producing GML 3 data for a GetFeatureInfo
+ * A GetFeatureInfo response handler specialized in producing Json and JsonP data for a GetFeatureInfo
  * request.
  * 
  * <p>
@@ -45,22 +46,21 @@ import org.opengis.feature.type.Name;
  * </p>
  * 
  * @author Simone Giannecchini, GeoSolutions
+ * @author Carlo Cancellieri
  */
 public class GeoJSONFeatureInfoOutputFormat extends GetFeatureInfoOutputFormat {
-    /**
-     * The MIME type of the format this response produces: <code>"application/vnd.ogc.gml"</code>
-     */
-    private static final String JSON = "application/json";
-
-    public final static String CALLBACK_FUNCTION = "paddingFeatureInfoOutput";
 
     protected final WMS wms;
 
     /**
-     * Constructor for subclasses
+     * @param wms
+     * @param outputFormat
+     * @throws Exception if outputFormat is not a valid json mime type
      */
-    public GeoJSONFeatureInfoOutputFormat(final WMS wms, final String outputFormat) {
+    public GeoJSONFeatureInfoOutputFormat(final WMS wms, final String outputFormat) throws Exception {
         super(outputFormat);
+        if (JSONType.getJSONType(outputFormat)==null)
+        	throw new Exception("Illegal json mime type");
         this.wms = wms;
     }
 
@@ -120,7 +120,7 @@ public class GeoJSONFeatureInfoOutputFormat extends GetFeatureInfoOutputFormat {
 
         final GeoServer gs = wms.getGeoServer();
         GeoJSONOutputFormat format = new GeoJSONOutputFormat(gs);
-        if (getContentType().equalsIgnoreCase(JSON)) {
+        if (JSONType.isJsonMimeType(getContentType())) {
             writeJSON(out, features, opDescriptor, format);
         } else {
             writeJSONP(out, features, opDescriptor, format);
@@ -144,9 +144,7 @@ public class GeoJSONFeatureInfoOutputFormat extends GetFeatureInfoOutputFormat {
             outWriter.write(")");
             outWriter.flush();
         } finally {
-            if (outWriter != null) {
-                IOUtils.closeQuietly(outWriter);
-            }
+            IOUtils.closeQuietly(outWriter);
         }
     }
 
@@ -156,20 +154,16 @@ public class GeoJSONFeatureInfoOutputFormat extends GetFeatureInfoOutputFormat {
     }
     
     private String getCallbackFunction() {
+    	
         Request request = Dispatcher.REQUEST.get();
         if(request == null) {
-            return CALLBACK_FUNCTION;
+        	return JSONType.CALLBACK_FUNCTION;
         } else if(!(request.getKvp().get("FORMAT_OPTIONS") instanceof Map)) {
-            return CALLBACK_FUNCTION;
+        	return JSONType.CALLBACK_FUNCTION;
         }
         
-        Map<String, String> map = (Map<String, String>) request.getKvp().get("FORMAT_OPTIONS");
-        String callback = map.get("callback");
-        if(callback != null) {
-            return callback;
-        } else {
-            return CALLBACK_FUNCTION;
-        }
+        return JSONType.getCallbackFunction(request.getKvp());
+        
     }
 
 }

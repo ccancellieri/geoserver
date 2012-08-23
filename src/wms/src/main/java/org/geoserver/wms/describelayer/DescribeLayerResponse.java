@@ -25,6 +25,7 @@ import org.springframework.util.Assert;
  * </p>
  * 
  * @author Gabriel Roldan
+ * @author Carlo Cancellieri
  * @version $Id$
  */
 public abstract class DescribeLayerResponse extends Response {
@@ -97,8 +98,6 @@ public abstract class DescribeLayerResponse extends Response {
         final DescribeLayerModel results = (DescribeLayerModel) value;
         try {
         	write(results, request, output);
-        } catch (ServiceException e ) {
-        	
         } finally {
     		if (output!=null){
     			try {

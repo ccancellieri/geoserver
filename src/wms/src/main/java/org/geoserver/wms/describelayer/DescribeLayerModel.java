@@ -11,6 +11,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.geoserver.ows.URLMangler.URLType;
@@ -22,6 +23,7 @@ import org.geotools.util.logging.Logging;
 
 /**
  * DescribeLayerModel
+ *  the model object used to handle a DescribeLayer response
  * 
  * @author carlo cancellieri
  */
@@ -32,7 +34,7 @@ public class DescribeLayerModel {
     
 	private final List<LayerDescription> layerDescriptions=new ArrayList<LayerDescription>();
     
-    private String version;
+    private final String version;
 
     public DescribeLayerModel(final DescribeLayerRequest request) throws ServiceException {
 
@@ -67,7 +69,8 @@ public class DescribeLayerModel {
             } else {
                 // non vector nor raster layer, LayerDescription will not contain these
                 // attributes
-            	LOGGER.warning("Non vector nor raster layer, LayerDescription will not contain these attributes");
+            	if (LOGGER.isLoggable(Level.WARNING))
+            		LOGGER.warning("Non vector nor raster layer, LayerDescription will not contain these attributes");
             }
             
             final LayerDescription layerDesc=new LayerDescription();
