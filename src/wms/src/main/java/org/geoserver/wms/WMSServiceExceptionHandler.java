@@ -17,7 +17,6 @@ import java.awt.font.TextLayout;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.text.AttributedString;
 import java.util.Arrays;
@@ -32,7 +31,6 @@ import javax.imageio.ImageIO;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.io.IOUtils;
 import org.geoserver.config.GeoServer;
 import org.geoserver.ows.Request;
 import org.geoserver.ows.ServiceExceptionHandler;
@@ -119,11 +117,6 @@ public class WMSServiceExceptionHandler extends ServiceExceptionHandler {
                 handleXmlException(exception, request);
                 return;
             }
-            width = (Integer) request.getKvp().get("WIDTH");
-            height = (Integer) request.getKvp().get("HEIGHT");
-            format = (String) request.getKvp().get("FORMAT");
-            bgcolor = (Color) request.getKvp().get("BGCOLOR");
-            transparent = (Boolean) request.getKvp().get("TRANSPARENT");
         } catch (Exception e) {
             // width and height might be missing
             handleXmlException(exception, request);
@@ -133,60 +126,37 @@ public class WMSServiceExceptionHandler extends ServiceExceptionHandler {
     	String charset=geoServer.getSettings().getCharset();
         if (JSONType.isJsonMimeType(exceptions)){
         	// use Json format
-        	handleJsonException(exception, request,charset,verbose,false);
+        	JSONType.handleJsonException(LOGGER,exception, request,charset,verbose,false);
+        	return;
         } else if (JSONType.isJsonpMimeType(exceptions)){
         	// use JsonP format
-        	handleJsonException(exception, request,charset,verbose,true);
-        } else if (isImageExceptionType(exceptions)
-                && width > 0 && height > 0 && FORMATS.contains(format)){
-	        // ok, it's image, then we have to build a text representing the
+        	JSONType.handleJsonException(LOGGER,exception, request,charset,verbose,true);
+        	return;
+        } else if (isImageExceptionType(exceptions)) {
+            // ok, it's image, then we have to build a text representing the
 	        // exception and lay it out in the image
-	        handleImageException(exception, request, width, height, format, exceptions, bgcolor, transparent);
+            try {
+                width = (Integer) request.getKvp().get("WIDTH");
+                height = (Integer) request.getKvp().get("HEIGHT");
+                format = (String) request.getKvp().get("FORMAT");
+                bgcolor = (Color) request.getKvp().get("BGCOLOR");
+                transparent = (Boolean) request.getKvp().get("TRANSPARENT");
+                if (width > 0 && height > 0 && FORMATS.contains(format)){
+    		        handleImageException(exception, request, width, height, format, exceptions, bgcolor, transparent);
+    		        return;
+    	        } else {
+    	        	// use default
+    	            handleXmlException(exception, request);
+    	        }
+            } catch (Exception e) {
+                // width and height might be missing
+            	// use default
+                handleXmlException(exception, request);
+            }
         } else {
         	// use default
             handleXmlException(exception, request);
         }
-    }
-    
-    private void handleJsonException(ServiceException exception, Request request, String charset, boolean verbose, boolean isJsonp) {
-    	
-    	final HttpServletResponse response = request.getHttpResponse();
-    	response.setContentType(JSONType.jsonp);
-        // TODO: server encoding options?
-        response.setCharacterEncoding(charset);
-        
-        ServletOutputStream os = null;
-    	try {
-    		os=response.getOutputStream();
-    		if (isJsonp) {
-    			// jsonp
-    			JSONType.writeJsonpException(exception,request,os,charset,verbose);
-    		} else {
-    			// json
-    			OutputStreamWriter outWriter = null;
-    			try {
-    				outWriter = new OutputStreamWriter(os, charset);
-    				JSONType.writeJsonException(exception, request, outWriter, verbose);
-    			} finally {
-    				if (outWriter != null) {
-    	    			try {
-    	    				outWriter.flush();
-    	    			} catch (IOException ioe){}
-    					IOUtils.closeQuietly(outWriter);
-    				}
-    			}
-
-    		}
-    	} catch (Exception e){
-    		LOGGER.warning(e.getLocalizedMessage());
-    	} finally {
-    		if (os!=null){
-    			try {
-    				os.flush();
-    			} catch (IOException ioe){}
-    			IOUtils.closeQuietly(os);
-    		}
-    	}
     }
     
     private boolean isImageExceptionType(String exceptions) {

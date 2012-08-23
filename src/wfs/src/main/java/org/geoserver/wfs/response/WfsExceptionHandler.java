@@ -6,19 +6,13 @@ package org.geoserver.wfs.response;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.util.List;
 
-import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 
-import net.sf.json.JSONException;
-
-import org.apache.commons.io.IOUtils;
 import org.geoserver.config.GeoServer;
-import org.geoserver.ows.DefaultServiceExceptionHandler;
+import org.geoserver.ows.OWS10ServiceExceptionHandler;
 import org.geoserver.ows.Request;
 import org.geoserver.ows.util.OwsUtils;
 import org.geoserver.ows.util.ResponseUtils;
@@ -26,15 +20,14 @@ import org.geoserver.platform.ServiceException;
 import org.geoserver.wfs.WFSInfo;
 import org.geoserver.wfs.json.JSONType;
 
-import com.thoughtworks.xstream.io.json.JsonWriter;
-
 /**
  * Handles a wfs service exception by producing an exception report.
  *
  * @author Justin Deoliveira, The Open Planning Project
+ * @author Carlo Cancellieri
  *
  */
-public class WfsExceptionHandler extends DefaultServiceExceptionHandler {
+public class WfsExceptionHandler extends OWS10ServiceExceptionHandler {
 
     GeoServer gs;
     
@@ -73,10 +66,10 @@ public class WfsExceptionHandler extends DefaultServiceExceptionHandler {
         }
         if (JSONType.isJsonMimeType(exceptions)){
         	// use Json format
-        	handleJsonException(exception, request, charset, verbose, false);
+        	JSONType.handleJsonException(LOGGER,exception, request, charset, verbose, false);
         } else if (JSONType.isJsonpMimeType(exceptions)){
         	// use JsonP format
-        	handleJsonException(exception, request, charset, verbose, true);
+        	JSONType.handleJsonException(LOGGER,exception, request, charset, verbose, true);
         } else {
         	handleDefault(exception,request,charset, verbose);
         }
@@ -89,48 +82,6 @@ public class WfsExceptionHandler extends DefaultServiceExceptionHandler {
         } else {
             super.handleServiceException(exception, request);
         }
-    }
-    
-
-    private void handleJsonException(ServiceException exception, Request request, String charset, boolean verbose, boolean isJsonp) {
-    	
-    	final HttpServletResponse response = request.getHttpResponse();
-    	response.setContentType(JSONType.jsonp);
-        // TODO: server encoding options?
-        response.setCharacterEncoding(charset);
-        
-        ServletOutputStream os = null;
-    	try {
-    		os=response.getOutputStream();
-    		if (isJsonp) {
-    			// jsonp
-    			JSONType.writeJsonpException(exception,request,os,charset,verbose);
-    		} else {
-    			// json
-    			OutputStreamWriter outWriter = null;
-    			try {
-    				outWriter = new OutputStreamWriter(os, charset);
-    				JSONType.writeJsonException(exception, request, outWriter, verbose);
-    			} finally {
-    				if (outWriter != null) {
-    	    			try {
-    	    				outWriter.flush();
-    	    			} catch (IOException ioe){}
-    					IOUtils.closeQuietly(outWriter);
-    				}
-    			}
-
-    		}
-    	} catch (Exception e){
-    		LOGGER.warning(e.getLocalizedMessage());
-    	} finally {
-    		if (os!=null){
-    			try {
-    				os.flush();
-    			} catch (IOException ioe){}
-    			IOUtils.closeQuietly(os);
-    		}
-    	}
     }
 
     public void handle1_0(ServiceException e, HttpServletResponse response) {
