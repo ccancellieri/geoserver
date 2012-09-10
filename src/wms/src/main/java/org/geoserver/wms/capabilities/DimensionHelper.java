@@ -84,7 +84,7 @@ abstract class DimensionHelper {
         if (mode == Mode.WMS11) {
             String elevUnits = hasElevation ? elevInfo.getUnits() : "";
             String elevUnitSymbol = hasElevation ? elevInfo.getUnitSymbol() : "";
-            declareWMS11Dimensions(hasTime, hasElevation, elevUnits, elevUnitSymbol);
+            declareWMS11Dimensions(hasTime, hasElevation, elevUnits, elevUnitSymbol,null);
         }
 
         // Time dimension
@@ -180,7 +180,8 @@ abstract class DimensionHelper {
         if (mode == Mode.WMS11) {
             String elevUnits = hasElevation ? elevInfo.getUnits() : "";
             String elevUnitSymbol = hasElevation ? elevInfo.getUnitSymbol() : "";
-            declareWMS11Dimensions(hasTime, hasElevation, elevUnits, elevUnitSymbol);
+            declareWMS11Dimensions(hasTime, hasElevation, elevUnits, elevUnitSymbol, customDimensions);
+            
         }
         
 
@@ -220,10 +221,12 @@ abstract class DimensionHelper {
     
     private void handleCustomDimensionRaster(String dimName, DimensionInfo dimension,
             ReaderDimensionsAccessor dimAccessor) {
+
         final TreeSet<String> values = dimAccessor.getDomain(dimName);
         String metadata = getCustomDomainRepresentation(dimension, values);
 
         writeCustomDimension(dimName, metadata, values.first(), dimension.getUnits(), dimension.getUnitSymbol());
+
     }
 
     /**
