@@ -1,0 +1,83 @@
+<html>
+  <head>
+    <style type="text/css">
+      <#include "geoserver.css" parse=false>
+      <#include "style.css" parse=false>
+    </style>
+    <style type="text/css">
+    #content {
+      margin: 2em;
+     
+    }
+    #info {
+      margin-top: 2em;
+      margin-left: 1em;
+    }
+    #info li span {
+      margin-left: 1em;
+    }
+    label {
+      line-height: 1em;
+    }
+    </style>
+  </head>
+  <body>
+	<!--   		public int count = 0; -->
+	<!--         private final Statistics time = new Statistics(); -->
+	<!--         private final Statistics responseLength = new Statistics(); -->
+	<!--         private final Statistics bodyContentLength = new Statistics(); -->
+	<!--         private final Statistics ContentLength = new Statistics(); -->
+	<!--         private final Statistics remoteLat = new Statistics(); -->
+	<!--         private final Statistics remoteLon = new Statistics(); -->
+	<!--  min  = Double.NaN; -->
+	<!--         max  = Double.NaN; -->
+	<!--         sum  = 0; -->
+	<!--         sum2 = 0; -->
+	<!--         n    = 0; -->
+	<!--         nNaN -->
+	<div id="content">
+		<h5>
+			<span>Requests: ${properties.count}</span>
+		</h5>
+		<div id="info">
+			<form>
+				<fieldset>
+					<legend>
+						<span>Time</span>
+					</legend>
+					${properties.time}
+				</fieldset>
+
+				<fieldset>
+					<legend>
+						<span>Response length</span>
+					</legend>
+					${properties.responseLength}
+				</fieldset>
+				
+				<fieldset>
+					<legend>
+						<span>Body content length</span>
+					</legend>
+					${properties.bodyContentLength}
+				</fieldset>
+				
+				<fieldset>
+					<legend>
+						<span>Remote Lat</span>
+					</legend>
+					${properties.remoteLat}
+				</fieldset>
+				
+				<fieldset>
+					<legend>
+						<span>Remote Lon</span>
+					</legend>
+					${properties.remoteLon}
+				</fieldset>
+				
+			</form>
+		</div>
+	</div>
+</body>
+</html>

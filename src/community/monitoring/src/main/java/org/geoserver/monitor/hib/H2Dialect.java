@@ -111,7 +111,7 @@ public class H2Dialect extends Dialect {
         registerFunction("lower", new StandardSQLFunction("lower", Hibernate.STRING));
         registerFunction("insert", new StandardSQLFunction("lower", Hibernate.STRING));
         registerFunction("left", new StandardSQLFunction("left", Hibernate.STRING));
-        // registerFunction("length", new StandardSQLFunction("length", Hibernate.INTEGER));
+        // registerFunction("responseLength", new StandardSQLFunction("responseLength", Hibernate.INTEGER));
         // registerFunction("locate", new StandardSQLFunction("locate", Hibernate.INTEGER));
         // registerFunction("lower", new StandardSQLFunction("lower", Hibernate.STRING));
         registerFunction("lcase", new StandardSQLFunction("lcase", Hibernate.STRING));

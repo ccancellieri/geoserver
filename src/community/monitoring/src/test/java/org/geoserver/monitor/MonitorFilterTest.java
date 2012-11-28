@@ -125,8 +125,8 @@ public class MonitorFilterTest {
         
         RequestData data = dao.getLast();
         
-        assertEquals(wanted_body, new String(data.getBody())); // Should be trimmed to the maximum length
-        assertEquals(LONG_BODY_SIZE, data.getBodyContentLength()); // Should be the full length, not the trimmed one
+        assertEquals(wanted_body, new String(data.getBody())); // Should be trimmed to the maximum responseLength
+        assertEquals(LONG_BODY_SIZE, data.getBodyContentLength()); // Should be the full responseLength, not the trimmed one
       
     }
     
@@ -160,8 +160,8 @@ public class MonitorFilterTest {
         
         RequestData data = dao.getLast();
         
-        assertEquals(wanted_body, new String(data.getBody())); // Should be trimmed to the maximum length
-        assertEquals(UNBOUNDED_BODY_SIZE, data.getBodyContentLength()); // Should be the full length, not the trimmed one
+        assertEquals(wanted_body, new String(data.getBody())); // Should be trimmed to the maximum responseLength
+        assertEquals(UNBOUNDED_BODY_SIZE, data.getBodyContentLength()); // Should be the full responseLength, not the trimmed one
       
     }
    

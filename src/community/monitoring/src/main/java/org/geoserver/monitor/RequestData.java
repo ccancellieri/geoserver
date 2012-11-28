@@ -73,7 +73,7 @@ public class RequestData implements Serializable {
     private byte[] body;
     
     /**
-     * The length of the request body in teh case of a PUT or POST
+     * The responseLength of the request body in teh case of a PUT or POST
      */
     private long bodyContentLength;
     
@@ -182,7 +182,7 @@ public class RequestData implements Serializable {
     private List<String> resources = new ArrayList<String>(1);
 
     /**
-     * The HTTP response length, in bytes
+     * The HTTP response responseLength, in bytes
      */
     private long responseLength;
 
@@ -254,7 +254,7 @@ public class RequestData implements Serializable {
     /**
      * The body of the HTTP request
      * 
-     * May be trimmed to a maximum length.  If so, check getBodyContentLength for the length of the
+     * May be trimmed to a maximum responseLength.  If so, check getBodyContentLength for the responseLength of the
      * untrimmed body.
      */
     public byte[] getBody() {

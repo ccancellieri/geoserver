@@ -14,7 +14,7 @@ import javax.servlet.http.HttpServletRequestWrapper;
 public class MonitorServletRequest extends HttpServletRequestWrapper {
 
     /**
-     * Don't restrict the maximum length of a request body.
+     * Don't restrict the maximum responseLength of a request body.
      */
     public static final long BODY_SIZE_UNBOUNDED = -1;
     
