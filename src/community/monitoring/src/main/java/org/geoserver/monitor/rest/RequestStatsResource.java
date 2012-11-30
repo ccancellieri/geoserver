@@ -48,23 +48,23 @@ public class RequestStatsResource extends ReflectiveResource {
         this.monitor = monitor;
     }
 
-    protected RequestStats collectData(Monitor monitor, String[] properties, String[] group,
-            Filter[] filters) {
-        final StatsVisitor g = new StatsVisitor();
-        Query query = new Query();
-        if (properties != null)
-            query.properties(properties);
-        if (group != null)
-            query.group(group);
-        if (filters != null) {
-            for (Filter filter : filters) {
-                query.filter(filter);
-            }
-        }
-
-        monitor.query(query, g);
-        return g.getData();
-    }
+//    protected RequestStats collectData(Monitor monitor, String[] properties, String[] group,
+//            Filter[] filters) {
+//        final StatsVisitor g = new StatsVisitor();
+//        Query query = new Query();
+//        if (properties != null)
+//            query.properties(properties);
+//        if (group != null)
+//            query.group(group);
+//        if (filters != null) {
+//            for (Filter filter : filters) {
+//                query.filter(filter);
+//            }
+//        }
+//
+//        monitor.query(query, g);
+//        return g.getData();
+//    }
 
     CSVFormat createCSVFormat(Request request, Response response) {
         return new CSVFormat(getFields(request), monitor);
@@ -238,7 +238,8 @@ public class RequestStatsResource extends ReflectiveResource {
                 if (p != null) {
                     requestProperties.add(p);
                 } else {
-                    // TODO LOG WARM
+                    throw new IllegalArgumentException("Unable to parse property: "+prop
+                            +"\nAvailables are: "+RequestProperties.values());
                 }
             }
         }
@@ -247,46 +248,51 @@ public class RequestStatsResource extends ReflectiveResource {
         String grp = form.getValues("group", ",", true);
         if (grp != null) {
             group = grp.split(",");
-            query.group(group);
+            final StatsVisitor g = new StatsVisitor(new Organizer() {
+                @Override
+                public String groupBy(RequestData req) {
+                    return parseGroup(group);
+                }
+
+                @Override
+                public RequestProperties[] useProperties() {
+                    // if properties filter is set
+                    if (!requestProperties.isEmpty())
+                        return requestProperties.toArray(new RequestProperties[] {});
+                    // else all the properties are requested
+                    return RequestProperties.values();
+                }
+            });
+            monitor.query(query, g);
+            g.getData();
         }
 
         String[] filters = null;
-        String fs = form.getFirstValue("filters");
+        String fs = form.getValues("filters",",",true);
         if (fs != null) {
-            // filters=props.split(Compar);
-            // for (String filter : filters){
-            // query.filter(new Filter("service", "WMS", Comparison.EQ));
-            // }
+             filters=fs.split(",");
+             for (String filter : filters){
+                 Filter f=parseFilter(filter);
+                 if (f!=null){
+                     query.filter(f);
+                 } else {
+                     throw new IllegalArgumentException("Unable to parse filter: "+f);
+                 }
+             }
         }
-        query.filter(new Filter("service", "WMS", Comparison.EQ));
 
-        final StatsVisitor g = new StatsVisitor(new Organizer() {
-            @Override
-            public String groupBy(RequestData req) {
-                return "";
-            }
-
-            @Override
-            public RequestProperties[] useProperties() {
-                // if properties filter is set
-                if (!requestProperties.isEmpty())
-                    return requestProperties.toArray(new RequestProperties[] {});
-                // else all the properties are requested
-                return RequestProperties.values();
-            }
-        });
-        monitor.query(query, g);
-        g.getData();
-
-        // return collectData(monitor, null, new Filter("service", "WMS", Comparison.EQ));
-
-        // String req = getAttribute("request");
-        // if (req == null) {
-        // //return all
-        // return monitor.getDAO().getOwsRequests();
-        // }
-        // else {
-        // return super.handleObjectGet();
-        // }
+    }
+    
+    private static String parseGroup(String group, RequestData req){
+        // TODO parse and combine request properties using group string
+        // f.e.:
+        // group = "path+host"
+        // return req.getPath()+req.getHost();
+        
+        return req.getPath();
+    }
+    private static Filter parseFilter(String filter){
+        //TODO filter parser
+        return new Filter("service", "WMS", Comparison.EQ);
     }
 }
