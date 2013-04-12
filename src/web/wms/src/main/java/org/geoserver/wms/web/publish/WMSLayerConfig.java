@@ -4,6 +4,10 @@
  */
 package org.geoserver.wms.web.publish;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.apache.wicket.Component;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.form.OnChangeAjaxBehavior;
@@ -15,6 +19,7 @@ import org.apache.wicket.markup.html.form.DropDownChoice;
 import org.apache.wicket.markup.html.form.TextField;
 import org.apache.wicket.markup.html.image.Image;
 import org.apache.wicket.model.IModel;
+import org.apache.wicket.model.LoadableDetachableModel;
 import org.apache.wicket.model.PropertyModel;
 import org.apache.wicket.model.ResourceModel;
 import org.apache.wicket.validation.validator.NumberValidator;
@@ -25,13 +30,16 @@ import org.geoserver.catalog.ResourceInfo;
 import org.geoserver.web.publish.LayerConfigurationPanel;
 import org.geoserver.web.util.MapModel;
 import org.geoserver.web.wicket.LiveCollectionModel;
+import org.geoserver.web.wicket.SimpleChoiceRenderer;
 
 /**
  * Configures {@link LayerInfo} WMS specific attributes
  */
 @SuppressWarnings("serial")
 public class WMSLayerConfig extends LayerConfigurationPanel {
-
+    
+    private static final List<String> INTERPOLATIONS = Arrays.asList("nearest neighbour","bilinear","bicubic");
+    
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public WMSLayerConfig(String id, IModel layerModel) {
         super(id, layerModel);
@@ -102,6 +110,13 @@ public class WMSLayerConfig extends LayerConfigurationPanel {
         };
         styleContainer.add(extraStyles);
         
+        final CoverageInfo coverage = (CoverageInfo) getLayerInfo().getResource();
+        add(new DropDownChoice("defaultInterpolationMethod", new PropertyModel(coverage.getMetadata(), "defaultInterpolationMethod"){
+            //TODO
+            
+        },
+                new WMSInterpolationModel()));
+        
         TextField renderingBuffer = new TextField("renderingBuffer", new MapModel(new PropertyModel(layerModel, "metadata"), LayerInfo.BUFFER), Integer.class);
         renderingBuffer.add(NumberValidator.minimum(0));
         styleContainer.add(renderingBuffer);
@@ -113,5 +128,17 @@ public class WMSLayerConfig extends LayerConfigurationPanel {
         authAndIds = new LayerAuthoritiesAndIdentifiersPanel("authoritiesAndIds", false, layerModel);
         add(authAndIds);
         
+        
+    }
+    static class WMSInterpolationModel extends LoadableDetachableModel {
+
+        WMSInterpolationModel() {
+            super(new ArrayList(INTERPOLATIONS));
+        }
+
+        @Override
+        protected Object load() {
+            return new ArrayList(INTERPOLATIONS);
+        }
     }
 }
