@@ -386,6 +386,16 @@
       </dependencies>
     </profile>
     <profile>
+     <id>cached-datastore</id>
+     <dependencies>
+      <dependency>
+       <groupId>org.geoserver.extension</groupId>
+	   <artifactId>cached-datastore</artifactId>
+       <version>${project.version}</version>
+      </dependency>
+     </dependencies>
+    </profile>
+    <profile>
      <id>h2</id>
      <dependencies>
       <dependency>

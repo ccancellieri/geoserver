@@ -207,6 +207,18 @@
     </profile>
 
     <profile>
+      <id>cached-datastore</id>
+      <activation>
+        <property>
+          <name>cached-datastore</name>
+        </property>
+      </activation>
+      <modules>
+        <module>cached-datastore</module>
+      </modules>
+    </profile>
+
+    <profile>
       <id>monitor</id>
       <activation>
         <property>
@@ -257,6 +269,7 @@
         <module>wps</module>
         <module>querylayer</module>
         <module>teradata</module>
+        <module>cached-datastore</module>
         <module>monitor</module>
         <module>security</module>
         <module>xslt</module>
@@ -288,6 +301,7 @@
         <module>wps</module>
         <module>querylayer</module>
         <module>teradata</module>
+        <module>cached-datastore</module>
         <module>monitor</module>
         <module>security</module>
         <module>xslt</module>

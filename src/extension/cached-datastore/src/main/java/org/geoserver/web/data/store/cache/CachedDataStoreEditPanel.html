@@ -1,0 +1,31 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+ "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:wicket="http://wicket.apache.org/">
+<body>
+
+	<wicket:panel wicket:id="parametersPanel">
+		<fieldset>
+			<legend>
+				<span><wicket:message key="connectionParameters">Connection Parameters</wicket:message></span>
+			</legend>
+			<table>
+				<tr>
+					<td><span><select wicket:id="sourceDD"
+							style="width: auto" class="text" /></span></td>
+					<td><span><select wicket:id="cacheDD"
+							style="width: auto" class="text" /></span></td>
+				</tr>
+				<tr>
+					<td valign="top" style="vertical-align: top"><br /> <wicket:panel
+							wicket:id="sourcePanel" style="vertical-align:top" /></td>
+					<td valign="top" style="vertical-align: top"><br /> <wicket:panel
+							wicket:id="cachePanel" style="vertical-align:top" /></td>
+				</tr>
+			</table>
+
+
+		</fieldset>
+	</wicket:panel>
+</body>
+</html>

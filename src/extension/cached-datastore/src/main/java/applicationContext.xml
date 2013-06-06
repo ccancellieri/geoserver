@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+
+<beans>
+	<bean id="cachedDataStorePanel" class="org.geoserver.web.data.resource.DataStorePanelInfo">
+		<property name="id" value="cachedDataStorePanelId" />
+		<property name="factoryClass"
+			value="org.geotools.data.cache.datastore.CachedDataStoreFactory" />
+		<property name="iconBase" value="org.geoserver.web.GeoServerApplication" />
+		<property name="icon" value="img/icons/geosilk/database_vector.png" />
+		<property name="componentClass"
+			value="org.geoserver.web.data.store.cache.CachedDataStoreEditPanel" />
+	</bean>
+</beans>
