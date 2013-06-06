@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+  http://maven.apache.org/maven-v4_0_0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.geoserver.extension</groupId>
+		<artifactId>monitor</artifactId>
+		<version>2.2-SNAPSHOT</version>
+	</parent>
+	<groupId>org.geoserver.extension</groupId>
+	<artifactId>standalone-monitor</artifactId>
+	<packaging>jar</packaging>
+	<name>GeoServer</name>
+
+	<organization>
+		<name>The Open Planning Project</name>
+		<url>http://www.openplans.org</url>
+	</organization>
+	<inceptionYear>2005</inceptionYear>
+
+	<licenses>
+		<license>
+			<name>General Public License (GPL)</name>
+			<url>http://www.gnu.org/copyleft/gpl.txt</url>
+		</license>
+	</licenses>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.geoserver.extension</groupId>
+			<artifactId>monitor-hibernate</artifactId>
+			<version>${gs.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>*</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+				<!--exclusion>
+					<groupId>org.geoserver.extension</groupId>
+					<artifactId>monitor-core</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.geoserver</groupId>
+					<artifactId>main</artifactId>
+				</exclusion-->
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.geoserver.extension</groupId>
+			<artifactId>monitor-core</artifactId>
+			<version>${gs.version}</version>
+			<exclusions>
+				<!--exclusion>
+					<groupId>org.geoserver</groupId>
+					<artifactId>main</artifactId>
+				</exclusion-->
+				<exclusion>
+					<groupId>org.geoserver</groupId>
+					<artifactId>rest</artifactId>
+				</exclusion>
+
+				<exclusion>
+					<groupId>org.geoserver</groupId>
+					<artifactId>wms</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.geoserver.web</groupId>
+					<artifactId>web-core</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<!-- <dependency> -->
+		<!-- <groupId>org.geoserver</groupId> -->
+		<!-- <artifactId>main</artifactId> -->
+		<!-- <version>${gs.version}</version> -->
+		<!-- </dependency> -->
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-jar-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>test-jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>

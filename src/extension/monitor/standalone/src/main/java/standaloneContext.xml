@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/tx
+    http://www.springframework.org/schema/tx/spring-tx.xsd"
+	default-autowire="byName">
+
+	<!-- <import resource="classpath*:applicationContext.xml"/> -->
+	<!-- <import resource="classpath*:applicationSecurityContext.xml"/> -->
+
+
+<!-- 	<jee:jndi-lookup id="geoCodeData" jndi-name="java:comp/env/jdbc/myTomcatPool"></jee:jndi-lookup> -->
+	
+	<!-- data source with a runtime fallback that will make it work against 
+		an H2 stored in the data dir if not configured before -->
+	<bean id="monitorDataSource" class="org.geoserver.monitor.hib.MonitoringDataSource">
+		<property name="dataDirectory" ref="dataDirectory" />
+		<property name="config" ref="monitorConfig" />
+	</bean>
+
+	<bean id="dataDirectory" class="org.geoserver.config.GeoServerDataDirectory">
+		<constructor-arg value="./" />
+	</bean>
+
+	<bean id="monitorConfig" class="org.geoserver.monitor.MonitorConfig">
+	</bean>
+
+	<!-- monitor daos -->
+	<import resource="applicationContext-hib2.xml" />
+
+</beans>
