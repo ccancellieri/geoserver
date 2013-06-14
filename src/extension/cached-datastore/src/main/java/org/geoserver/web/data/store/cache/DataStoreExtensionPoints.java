@@ -4,21 +4,14 @@
  */
 package org.geoserver.web.data.store.cache;
 
-import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.List;
 
 import org.apache.wicket.markup.html.form.Form;
-import org.geoserver.catalog.Catalog;
-import org.geoserver.catalog.CoverageStoreInfo;
-import org.geoserver.catalog.DataStoreInfo;
-import org.geoserver.catalog.ResourcePool;
-import org.geoserver.catalog.StoreInfo;
 import org.geoserver.web.GeoServerApplication;
 import org.geoserver.web.data.resource.DataStorePanelInfo;
 import org.geoserver.web.data.store.StoreEditPanel;
 import org.geoserver.web.data.store.StoreExtensionPoints;
-import org.geotools.coverage.grid.io.AbstractGridFormat;
 import org.geotools.data.DataAccessFactory;
 
 /**
