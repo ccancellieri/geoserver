@@ -2,6 +2,9 @@
 <!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
 
 <beans>
+
+	<bean id="CacheBeanFactory" class="org.geoserver.web.data.store.cache.BeanFactory" singleton="true"/>
+	
 	<bean id="cachedDataStorePanel" class="org.geoserver.web.data.resource.DataStorePanelInfo">
 		<property name="id" value="cachedDataStorePanelId" />
 		<property name="factoryClass"
@@ -11,4 +14,6 @@
 		<property name="componentClass"
 			value="org.geoserver.web.data.store.cache.CachedDataStoreEditPanel" />
 	</bean>
+	
+	
 </beans>
