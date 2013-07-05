@@ -15,14 +15,14 @@ import org.springframework.util.StringUtils;
 public class BeanFactory implements BeanFactoryPostProcessor {
 
     protected final static transient Logger LOGGER = org.geotools.util.logging.Logging
-            .getLogger("org.geotools.data.cache.utils.CacheUtils");
+            .getLogger("org.geoserver.web.data.store.cache.BeanFactory");
 
     @Override
     public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory)
             throws BeansException {
         // for (String beanName : dependencies.keySet()) {
-        String beanName = "geoServerLoader";
-        BeanDefinition bd = beanFactory.getBeanDefinition(beanName);
+        final String beanName = "geoServerLoader";
+        final BeanDefinition bd = beanFactory.getBeanDefinition(beanName);
         bd.setDependsOn(StringUtils.mergeStringArrays(bd.getDependsOn(), new String[] {
                 CacheUtils.BEAN_NAME, EHCacheUtils.BEAN_NAME }));
         // }

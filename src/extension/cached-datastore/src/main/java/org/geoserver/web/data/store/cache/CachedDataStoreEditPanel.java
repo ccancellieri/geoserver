@@ -3,15 +3,12 @@ package org.geoserver.web.data.store.cache;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.wicket.Component;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.form.OnChangeAjaxBehavior;
 import org.apache.wicket.markup.html.form.DropDownChoice;
@@ -22,77 +19,80 @@ import org.apache.wicket.model.CompoundPropertyModel;
 import org.apache.wicket.model.LoadableDetachableModel;
 import org.geoserver.catalog.Catalog;
 import org.geoserver.catalog.DataStoreInfo;
-import org.geoserver.catalog.StoreInfo;
 import org.geoserver.web.GeoServerApplication;
-import org.geoserver.web.data.store.ParamInfo;
 import org.geoserver.web.data.store.StoreEditPanel;
 import org.geoserver.web.util.MapModel;
 import org.geotools.data.DataAccessFactory;
-import org.geotools.data.DataAccessFactory.Param;
+import org.geotools.data.cache.datastore.CachedDataStore;
 import org.geotools.data.cache.datastore.CachedDataStoreFactory;
-import org.geotools.data.cache.op.CacheStatus;
+import org.geotools.data.cache.op.CacheManager;
 import org.geotools.data.cache.op.CachedOpSPI;
 import org.geotools.data.cache.op.Operation;
-import org.geotools.data.cache.op.SchemaOpSPI;
 import org.geotools.data.cache.utils.CacheUtils;
+import org.geotools.data.cache.utils.CachedOpSPIMapParam;
+import org.geotools.data.cache.utils.MapParam;
 import org.geotools.util.logging.Logging;
 
 public class CachedDataStoreEditPanel extends StoreEditPanel {
 
+    /** serialVersionUID */
+    private static final long serialVersionUID = 14714866663069357L;
+
     private static final Logger LOGGER = Logging.getLogger("org.geoserver.web.data.store.cache");
 
-    private Form sourceForm;
+    private Map<String, CachedOpSPI<?>> cacheStatusMap;
 
-    private Form cacheForm;
+    private Form<DataStoreInfo> sourceForm;
+
+    private Form<DataStoreInfo> cacheForm;
 
     private final DataStoreInfo storeInfo;
 
-    final Map<String, Serializable> params;
+    private final Map<String, Serializable> params;
 
-    public CachedDataStoreEditPanel(final String componentId, final Form storeEditForm) {
+    // // instatiated only if needed and used as shared variable for clear purpose only
+    // private CachedDataStore cds;
+
+    public CachedDataStoreEditPanel(final String componentId,
+            final Form<DataStoreInfo> storeEditForm) throws InstantiationException,
+            IllegalAccessException, ClassNotFoundException {
         super(componentId, storeEditForm);
         setDefaultModel(this.getDefaultModel());
         this.setOutputMarkupId(true);
 
         storeInfo = (DataStoreInfo) storeEditForm.getModelObject();
         params = storeInfo.getConnectionParameters();
-        
-        appendCachedOpMenu(this);
 
-        // ////////////////////////////////////////////////////////////////////////////
-        // Adding the store property
-        // ////////////////////////////////////////////////////////////////////////////
         final List<String> stores = new ArrayList<String>(CachedDataStoreFactory
                 .getAvailableDataStores().keySet());
-        if (params.get(CachedDataStoreFactory.SOURCE_TYPE_KEY) == null) {
-            params.put(CachedDataStoreFactory.SOURCE_TYPE_KEY, stores.get(0));
-        }
 
+        // ////////////////////////////////////////////////////////////////////////////
+        // Adding the source panel
+        // ////////////////////////////////////////////////////////////////////////////
+        sourceForm = appendStoreDDSelector("sourcePanel", CachedDataStoreFactory.SOURCE_TYPE_KEY,
+                CachedDataStoreFactory.SOURCE_PARAMS_KEY, stores);
+
+        // create the drop down to select the desired store
         final DropDownChoice<String> sourceDD = new DropDownChoice<String>(
                 CachedDataStoreFactory.SOURCE_TYPE_KEY, new MapModel(params,
                         CachedDataStoreFactory.SOURCE_TYPE_KEY), new DetachableList(),
                 new MapRenderer());
-
-        final DataStoreInfo sourceDS = getDataStoreInfo(null,
-                (String) params.get(CachedDataStoreFactory.SOURCE_TYPE_KEY), getCatalog());
-
-        final Object sourceParamObj = params.get(CachedDataStoreFactory.SOURCE_PARAMS_KEY);
-        Map<String, Serializable> sourceParams = null;
-        if (sourceParamObj != null) {
-            if (sourceParamObj instanceof Map) {
-                sourceParams = (Map<String, Serializable>) sourceParamObj;
-            } else /* if (paramObj instanceof String) */{
-                sourceParams = parseMap((String) sourceParamObj, sourceDS);
-            }
-        }
-
-        // sourceDS.getConnectionParameters().putAll(sourceParams);
-
-        sourceForm = updateDataStorePanel(this, storeEditForm, sourceDS,
-                (String) params.get(CachedDataStoreFactory.SOURCE_TYPE_KEY), "sourcePanel");
         sourceDD.add(new OnChangeAjaxBehavior() {
+            /** serialVersionUID */
+            private static final long serialVersionUID = 1323333739138238355L;
+
+            /**
+             * onUpdate:<br/>
+             * load a new datastore<br/>
+             * generate the panel<br/>
+             * add this to redraw<br/>
+             */
             @Override
             protected void onUpdate(AjaxRequestTarget target) {
+
+                // clear any previous store status
+                clear();
+
                 sourceForm = updateDataStorePanel(CachedDataStoreEditPanel.this, storeEditForm,
                         null, (String) params.get(CachedDataStoreFactory.SOURCE_TYPE_KEY),
                         "sourcePanel");
@@ -101,42 +101,36 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
                 }
             }
         });
+        // add the storeDrop down to this panel
         add(sourceDD);
 
         // ////////////////////////////////////////////////////////////////////////////
-        // Adding the cache property
+        // Adding the cache panel
         // ////////////////////////////////////////////////////////////////////////////
+        cacheForm = appendStoreDDSelector("cachePanel", CachedDataStoreFactory.CACHE_TYPE_KEY,
+                CachedDataStoreFactory.CACHE_PARAMS_KEY, stores);
 
-        if (params.get(CachedDataStoreFactory.CACHE_TYPE_KEY) == null) {
-            params.put(CachedDataStoreFactory.CACHE_TYPE_KEY, stores.get(0));
-        }
-        // final Map<String, Serializable> cacheParameters = CachedDataStoreFactory.extractParams(
-        // storeInfo.getConnectionParameters(), CachedDataStoreFactory.CACHE_PREFIX);
-
+        // create the drop down to select the desired store
         final DropDownChoice<String> cacheDD = new DropDownChoice<String>(
                 CachedDataStoreFactory.CACHE_TYPE_KEY, new MapModel(params,
                         CachedDataStoreFactory.CACHE_TYPE_KEY), new DetachableList(),
                 new MapRenderer());
-
-        final DataStoreInfo cacheDS = getDataStoreInfo(null,
-                (String) params.get(CachedDataStoreFactory.CACHE_TYPE_KEY), getCatalog());
-
-        final Object cacheParamObj = params.get(CachedDataStoreFactory.CACHE_PARAMS_KEY);
-        Map<String, Serializable> cacheParams = null;
-        if (cacheParamObj != null) {
-            if (cacheParamObj instanceof Map) {
-                cacheParams = (Map<String, Serializable>) cacheParamObj;
-            } else /* if (paramObj instanceof String) */{
-                cacheParams = parseMap((String) cacheParamObj, cacheDS);
-            }
-        }
-        // cacheDS.getConnectionParameters().putAll(cacheParams);
-
-        cacheForm = updateDataStorePanel(this, storeEditForm, cacheDS,
-                (String) params.get(CachedDataStoreFactory.CACHE_TYPE_KEY), "cachePanel");
         cacheDD.add(new OnChangeAjaxBehavior() {
+            /** serialVersionUID */
+            private static final long serialVersionUID = -7680695733844795529L;
+
+            /**
+             * onUpdate:<br/>
+             * load a new datastore<br/>
+             * generate the panel<br/>
+             * add this to redraw<br/>
+             */
             @Override
             protected void onUpdate(AjaxRequestTarget target) {
+
+                // clear any previous store status
+                clear();
+
                 cacheForm = updateDataStorePanel(CachedDataStoreEditPanel.this, storeEditForm,
                         null, (String) params.get(CachedDataStoreFactory.CACHE_TYPE_KEY),
                         "cachePanel");
@@ -145,88 +139,131 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
                 }
             }
         });
+        // add the storeDrop down to this panel
         add(cacheDD);
-        
-    }
-    
-    private void appendCachedOpMenu(Panel parent){
 
-        final Map<String, CachedOpSPI<?>> cacheStatusMap = new HashMap<String, CachedOpSPI<?>>();
-        CacheStatus status = null;
+        // ////////////////////////////////////////////////////////////////////////////
+        // Adding the CachedOpSPI form selector
+        // ////////////////////////////////////////////////////////////////////////////
+        appendCachedOpMenu(this);
+    }
+
+    private void clear() {
+        CachedDataStoreFactory f = new CachedDataStoreFactory();
+        CachedDataStore ds = null;
         try {
-            status = new CacheStatus(CachedDataStoreFactory.getDataStoreUID(params));
+            ds = (CachedDataStore) f.createNewDataStore(params);
+            if (ds != null) {
+                CacheManager cacheManager = ds.getCacheManager();
+                cacheManager.getStatus().clear();
+            }
         } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, e.getMessage(), e);
+            LOGGER.log(Level.WARNING, e.getMessage(), e);
+        } finally {
+            ds.dispose();
+        }
+    }
+
+    /**
+     * @param panelName the name of the generated panel
+     * @param argsStoreTypeKey the key to locate into the params map the type of the store
+     * @param argsParamsNameKey the key to locate into the params map the map of parameters to configure the selected store
+     * @param stores the list of available stores
+     */
+    private Form<DataStoreInfo> appendStoreDDSelector(final String panelName,
+            final String argsStoreTypeKey, String argsParamsNameKey, final List<String> stores) {
+
+        // get the firs store as default
+        if (params.get(argsStoreTypeKey) == null) {
+            params.put(argsStoreTypeKey, stores.get(0));
         }
 
-        Set<CachedOpSPI<?>> keys;
-        if (status != null)
-            keys = status.getCachedOpKeys();
-        else
-            keys = Collections.EMPTY_SET;
+        final Object cacheParamObj = params.get(argsParamsNameKey);
+        Map<String, Serializable> cacheParams = null;
+        if (cacheParamObj != null) {
+            if (cacheParamObj instanceof Map) {
+                cacheParams = (Map<String, Serializable>) cacheParamObj;
+            } else /* if (paramObj instanceof String) */{
+                cacheParams = MapParam.parseMap((String) cacheParamObj);
+            }
+        }
+        // create a new datastore info using extracted params (or null if no one is found)
+        final DataStoreInfo dataStore = getDataStoreInfo(cacheParams,
+                (String) params.get(argsStoreTypeKey), getCatalog());
 
-        for (Operation op : Operation.values()) {
-            // CachedOp<>
-            boolean found = false;
-            for (CachedOpSPI<?> spi : keys) {
-                if (spi.getOp().equals(op)) {
-                    found = true;
-                    cacheStatusMap.put(op.toString(), spi);
-                }
+        // create a form using that store (it is embedded in a new panel which is added to this instance itself)
+        return updateDataStorePanel(this, storeEditForm, dataStore,
+                (String) params.get(argsStoreTypeKey), panelName);
+
+    }
+
+    private void appendCachedOpMenu(Panel parent) throws InstantiationException,
+            IllegalAccessException, ClassNotFoundException {
+
+        final Object cacheStatusMapObj = params.get(CachedDataStoreFactory.CACHEDOPSPI_PARAMS_KEY);
+        if (cacheStatusMapObj != null) {
+            if (cacheStatusMapObj instanceof Map) {
+                cacheStatusMap = (Map<String, CachedOpSPI<?>>) cacheStatusMapObj;
+            } else /* if (paramObj instanceof String) */{
+                cacheStatusMap = CachedOpSPIMapParam.parseSPIMap((String) cacheStatusMapObj);
             }
-            if (!found) {
-                if (op.equals(Operation.schema)) {
-                    // special case
-                    cacheStatusMap.put(op.toString(), new SchemaOpSPI());
-                } else {
-                    cacheStatusMap.put(op.toString(), null);// new NoCachedOpSPI());
-                }
-            }
+        } else {
+            cacheStatusMap = new HashMap<String, CachedOpSPI<?>>();
         }
 
         final CacheUtils cu = CacheUtils.getCacheUtils();
         for (Operation op : Operation.values()) {
-            List<String> listOfOp = new ArrayList<String>();
-            listOfOp.add("NONE");
+            final List<CachedOpSPI<?>> listOfOp = new ArrayList<CachedOpSPI<?>>();
             for (CachedOpSPI<?> spi : cu.getCachedOps()) {
                 if (op.equals(spi.getOp())) {
-                    listOfOp.add(spi.getClass().toString());
+                    listOfOp.add(spi);
                 }
             }
-            final DropDownChoice<String> cachedOpDD = new DropDownChoice<String>(op.toString(),
-                    new MapModel(cacheStatusMap, op.toString()), listOfOp, new IChoiceRenderer() {
+            final DropDownChoice<CachedOpSPI<?>> cachedOpDD = new DropDownChoice<CachedOpSPI<?>>(
+                    op.toString(), new MapModel(cacheStatusMap, op.toString()), listOfOp,
+                    new IChoiceRenderer<CachedOpSPI<?>>() {
+
+                        /** serialVersionUID */
+                        private static final long serialVersionUID = 1164860377053981031L;
 
                         @Override
-                        public Object getDisplayValue(Object object) {
-                            return object;
+                        public Object getDisplayValue(CachedOpSPI<?> object) {
+                            return object.getClass().getName();
                         }
 
                         @Override
-                        public String getIdValue(Object object, int index) {
-                            if (object != null)
-                                return object.toString();
-                            else
-                                return "NONE";
+                        public String getIdValue(CachedOpSPI<?> object, int index) {
+                            return object.getOp().toString();
                         }
 
                     });
+            cachedOpDD.setNullValid(true);
+            cachedOpDD.add(new OnChangeAjaxBehavior() {
+                /** serialVersionUID */
+                private static final long serialVersionUID = -4965892267714452997L;
 
+                @Override
+                protected void onUpdate(AjaxRequestTarget target) {
+                    // clear any previous store status
+                    clear();
+                }
+            });
             parent.add(cachedOpDD);
         }
     }
 
-    private Map<String, Serializable> parseMap(String input, StoreInfo info) {
-        // final Map<String, Serializable> map = new HashMap<String, Serializable>();
-        input = input.substring(1, input.length() - 1);
-        for (String pair : input.split(",")) {
-            String[] kv = pair.split("=");
-            ParamInfo pInfo = new ParamInfo(new Param(kv[0].trim()));
-            pInfo.setValue(kv[1].trim());
-            this.applyParamDefault(pInfo, info);
-            // map.put(kv[0], kv[1]);
-        }
-        return info.getConnectionParameters();
-    }
+    // private Map<String, Serializable> parseMap(String input, StoreInfo info) {
+    // // final Map<String, Serializable> map = new HashMap<String, Serializable>();
+    // input = input.substring(1, input.length() - 1);
+    // for (String pair : input.split(",")) {
+    // String[] kv = pair.split("=");
+    // ParamInfo pInfo = new ParamInfo(new Param(kv[0].trim()));
+    // pInfo.setValue(kv[1].trim());
+    // this.applyParamDefault(pInfo, info);
+    // // map.put(kv[0], kv[1]);
+    // }
+    // return info.getConnectionParameters();
+    // }
 
     private static DataStoreInfo getDataStoreInfo(
             final Map<String, Serializable> existingParameters, final String type,
@@ -267,8 +304,8 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
         }
     }
 
-    private static Form updateDataStorePanel(final Panel parent, final Form storeEditForm,
-            DataStoreInfo info, String store, String name) {
+    private static Form<DataStoreInfo> updateDataStorePanel(final Panel parent,
+            final Form<?> storeEditForm, DataStoreInfo info, String store, String name) {
 
         GeoServerApplication app = (GeoServerApplication) parent.getApplication();
         final DataAccessFactory storeFactory = CachedDataStoreFactory.getAvailableDataStores().get(
@@ -281,15 +318,20 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
 
         // info.setWorkspace(defaultWs);
         // info.setEnabled(true);
+        // Form storeForm = new Form(storeEditForm.getId(), new CompoundPropertyModel<DataStoreInfo>(
+        // info));
+
+        // set the type of the desired store
         info.setType(store);
-        Form storeForm = new Form(storeEditForm.getId(), new CompoundPropertyModel<DataStoreInfo>(
-                info));
+
+        final Form<DataStoreInfo> storeForm = new Form<DataStoreInfo>(store,
+                new CompoundPropertyModel<DataStoreInfo>(info));
         storeForm.setOutputMarkupId(true);
-        Panel storeEditPanel = DataStoreExtensionPoints.getStoreEditPanel(name, storeForm,
+        final Panel storeEditPanel = DataStoreExtensionPoints.getStoreEditPanel(name, storeForm,
                 storeFactory, app);
         parent.addOrReplace(storeEditPanel);
         storeEditPanel.setOutputMarkupId(true);
-        storeEditPanel.setVisible(true);
+        // storeEditPanel.setVisible(true);
 
         return storeForm;
     }
@@ -302,29 +344,28 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
     @Override
     public boolean onSave() {
 
-        // if ((sourceParameters = (Map<String, Serializable>) params
-        // .get(CachedDataStoreFactory.SOURCE_PARAMS_KEY)) == null) {
-        // sourceParameters = new HashMap<String, Serializable>();
-        // params.put(CachedDataStoreFactory.SOURCE_PARAMS_KEY, (Serializable) sourceParameters);
-        // }
-        params.put(CachedDataStoreFactory.SOURCE_PARAMS_KEY,
-                (Serializable) ((DataStoreInfo) sourceForm.getModelObject())
-                        .getConnectionParameters());
-        //
-        // if ((cacheParameters = (Map<String, Serializable>) params
-        // .get(CachedDataStoreFactory.CACHE_PARAMS_KEY)) == null) {
-        // cacheParameters = new HashMap<String, Serializable>();
-        // params.put(CachedDataStoreFactory.CACHE_PARAMS_KEY, (Serializable) cacheParameters);
-        // }
-        params.put(CachedDataStoreFactory.CACHE_PARAMS_KEY,
-                (Serializable) ((DataStoreInfo) cacheForm.getModelObject())
-                        .getConnectionParameters());
+        params.put(CachedDataStoreFactory.SOURCE_PARAMS_KEY, (Serializable) sourceForm
+                .getModelObject().getConnectionParameters());
 
-        params.put(CachedDataStoreFactory.NAME_KEY,
-                (Serializable) ((String) this.storeInfo.getName()));
+        params.put(CachedDataStoreFactory.CACHE_PARAMS_KEY, (Serializable) cacheForm
+                .getModelObject().getConnectionParameters());
 
-        params.put(CachedDataStoreFactory.NAMESPACE_KEY, (Serializable) ((String) this.storeInfo
-                .getWorkspace().getName()));
+        String oldName = (String) params.get(CachedDataStoreFactory.NAME_KEY);
+        String name = (String) this.storeInfo.getName();
+        if (!oldName.isEmpty() && !oldName.equals(name)) {
+            clear();
+        }
+        params.put(CachedDataStoreFactory.NAME_KEY, (Serializable) name);
+
+        String oldNameSpace = (String) params.get(CachedDataStoreFactory.NAMESPACE_KEY);
+        String nameSpace = (String) this.storeInfo.getWorkspace().getName();
+        if (!oldNameSpace.isEmpty() && !oldName.equals(nameSpace)) {
+            clear();
+        }
+        params.put(CachedDataStoreFactory.NAMESPACE_KEY, (Serializable) nameSpace);
+
+        params.put(CachedDataStoreFactory.CACHEDOPSPI_PARAMS_KEY,
+                (Serializable) CachedOpSPIMapParam.toText(cacheStatusMap));
 
         // cacheParameters
         return true;
