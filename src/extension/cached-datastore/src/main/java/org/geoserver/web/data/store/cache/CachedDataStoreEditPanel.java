@@ -23,9 +23,8 @@ import org.geoserver.web.GeoServerApplication;
 import org.geoserver.web.data.store.StoreEditPanel;
 import org.geoserver.web.util.MapModel;
 import org.geotools.data.DataAccessFactory;
-import org.geotools.data.cache.datastore.CachedDataStore;
 import org.geotools.data.cache.datastore.CachedDataStoreFactory;
-import org.geotools.data.cache.op.CacheManager;
+import org.geotools.data.cache.op.CacheStatus;
 import org.geotools.data.cache.op.CachedOpSPI;
 import org.geotools.data.cache.op.Operation;
 import org.geotools.data.cache.utils.CacheUtils;
@@ -148,20 +147,30 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
         appendCachedOpMenu(this);
     }
 
-    private void clear() {
-        CachedDataStoreFactory f = new CachedDataStoreFactory();
-        CachedDataStore ds = null;
+    private void clear(){
+        CacheStatus status;
         try {
-            ds = (CachedDataStore) f.createNewDataStore(params);
-            if (ds != null) {
-                CacheManager cacheManager = ds.getCacheManager();
-                cacheManager.getStatus().clear();
-            }
+            status = new CacheStatus(CachedDataStoreFactory.createDataStoreUID(params));
+            status.clear();
         } catch (IOException e) {
-            LOGGER.log(Level.WARNING, e.getMessage(), e);
-        } finally {
-            ds.dispose();
+            LOGGER.log(Level.FINER, e.getMessage(), e);
         }
+//        CachedDataStoreFactory f = new CachedDataStoreFactory();
+//        CachedDataStore ds = null;
+//        try {
+//            ds = (CachedDataStore) f.createNewDataStore(params);
+//            if (ds != null) {
+//                CacheManager cacheManager = ds.getCacheManager();
+//                cacheManager.getStatus().clear();
+//                
+//            }
+//        } catch (IOException e) {
+//            LOGGER.log(Level.WARNING, e.getMessage(), e);
+//        } finally {
+//            if (ds!=null){
+//                ds.dispose();
+//            }
+//        }
     }
 
     /**
@@ -213,27 +222,27 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
 
         final CacheUtils cu = CacheUtils.getCacheUtils();
         for (Operation op : Operation.values()) {
-            final List<CachedOpSPI<?>> listOfOp = new ArrayList<CachedOpSPI<?>>();
+            final List<Class<CachedOpSPI<?>>> listOfOp = new ArrayList<Class<CachedOpSPI<?>>>();
             for (CachedOpSPI<?> spi : cu.getCachedOps()) {
                 if (op.equals(spi.getOp())) {
-                    listOfOp.add(spi);
+                    listOfOp.add((Class<CachedOpSPI<?>>)spi.getClass());
                 }
             }
-            final DropDownChoice<CachedOpSPI<?>> cachedOpDD = new DropDownChoice<CachedOpSPI<?>>(
-                    op.toString(), new MapModel(cacheStatusMap, op.toString()), listOfOp,
-                    new IChoiceRenderer<CachedOpSPI<?>>() {
+            final DropDownChoice<Class<CachedOpSPI<?>>> cachedOpDD = new DropDownChoice<Class<CachedOpSPI<?>>>(
+                    op.toString(), new org.geoserver.web.data.store.cache.MapModel(cacheStatusMap, op.toString()), listOfOp,
+                    new IChoiceRenderer<Class<CachedOpSPI<?>>>() {
 
                         /** serialVersionUID */
                         private static final long serialVersionUID = 1164860377053981031L;
 
                         @Override
-                        public Object getDisplayValue(CachedOpSPI<?> object) {
-                            return object.getClass().getName();
+                        public Object getDisplayValue(Class<CachedOpSPI<?>> object) {
+                            return object;
                         }
 
                         @Override
-                        public String getIdValue(CachedOpSPI<?> object, int index) {
-                            return object.getOp().toString();
+                        public String getIdValue(Class<CachedOpSPI<?>> object, int index) {
+                            return object.getName();
                         }
 
                     });
@@ -359,7 +368,7 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
 
         String oldNameSpace = (String) params.get(CachedDataStoreFactory.NAMESPACE_KEY);
         String nameSpace = (String) this.storeInfo.getWorkspace().getName();
-        if (!oldNameSpace.isEmpty() && !oldName.equals(nameSpace)) {
+        if (!oldNameSpace.isEmpty() && !oldNameSpace.equals(nameSpace)) {
             clear();
         }
         params.put(CachedDataStoreFactory.NAMESPACE_KEY, (Serializable) nameSpace);
