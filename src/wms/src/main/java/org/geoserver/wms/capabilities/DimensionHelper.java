@@ -7,11 +7,15 @@ package org.geoserver.wms.capabilities;
 import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.logging.Level;
@@ -177,8 +181,12 @@ abstract class DimensionHelper {
         
         // Process only custom dimensions supported by the reader
         if (hasCustomDimensions) {
-            for (String key : customDimensions.keySet()) {
-                if (!dimensions.hasDomain(key)) customDimensions.remove(key);
+            final Iterator<Entry<String, DimensionInfo>> it = customDimensions.entrySet().iterator();
+            while (it.hasNext()) {
+                final Entry<String, DimensionInfo> entry=it.next();
+                if (!dimensions.hasDomain(entry.getKey())){
+                    it.remove();
+                }
             }
         }
         
