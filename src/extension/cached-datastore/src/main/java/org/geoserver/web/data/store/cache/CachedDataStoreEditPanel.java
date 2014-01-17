@@ -359,18 +359,18 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
         params.put(CachedDataStoreFactory.CACHE_PARAMS_KEY, (Serializable) cacheForm
                 .getModelObject().getConnectionParameters());
 
-        String oldName = (String) params.get(CachedDataStoreFactory.NAME_KEY);
+//        String oldName = (String) params.get(CachedDataStoreFactory.NAME_KEY);
         String name = (String) this.storeInfo.getName();
-        if (!oldName.isEmpty() && !oldName.equals(name)) {
-            clear();
-        }
+        //if (!oldName.isEmpty() && !oldName.equals(name)) {
+        //    clear();
+        //}
         params.put(CachedDataStoreFactory.NAME_KEY, (Serializable) name);
 
-        String oldNameSpace = (String) params.get(CachedDataStoreFactory.NAMESPACE_KEY);
+//        String oldNameSpace = (String) params.get(CachedDataStoreFactory.NAMESPACE_KEY);
         String nameSpace = (String) this.storeInfo.getWorkspace().getName();
-        if (!oldNameSpace.isEmpty() && !oldNameSpace.equals(nameSpace)) {
-            clear();
-        }
+//        if (!oldNameSpace.isEmpty() && !oldNameSpace.equals(nameSpace)) {
+//            clear();
+//        }
         params.put(CachedDataStoreFactory.NAMESPACE_KEY, (Serializable) nameSpace);
 
         params.put(CachedDataStoreFactory.CACHEDOPSPI_PARAMS_KEY,
