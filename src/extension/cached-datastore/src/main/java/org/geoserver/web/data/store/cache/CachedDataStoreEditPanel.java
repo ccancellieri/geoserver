@@ -1,12 +1,10 @@
 package org.geoserver.web.data.store.cache;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.wicket.ajax.AjaxRequestTarget;
@@ -24,7 +22,6 @@ import org.geoserver.web.data.store.StoreEditPanel;
 import org.geoserver.web.util.MapModel;
 import org.geotools.data.DataAccessFactory;
 import org.geotools.data.cache.datastore.CachedDataStoreFactory;
-import org.geotools.data.cache.op.CacheStatus;
 import org.geotools.data.cache.op.CachedOpSPI;
 import org.geotools.data.cache.op.Operation;
 import org.geotools.data.cache.utils.CacheUtils;
@@ -148,13 +145,13 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
     }
 
     private void clear(){
-        CacheStatus status;
-        try {
-            status = new CacheStatus(CachedDataStoreFactory.createDataStoreUID(params));
-            status.clear();
-        } catch (IOException e) {
-            LOGGER.log(Level.FINER, e.getMessage(), e);
-        }
+//        this.storeInfo.getDataStore(null). status;
+//        try {
+//            status = new CacheStatus(CachedDataStoreFactory.createDataStoreUID(params));
+//            status.clear();
+//        } catch (IOException e) {
+//            LOGGER.log(Level.FINER, e.getMessage(), e);
+//        }
 //        CachedDataStoreFactory f = new CachedDataStoreFactory();
 //        CachedDataStore ds = null;
 //        try {
