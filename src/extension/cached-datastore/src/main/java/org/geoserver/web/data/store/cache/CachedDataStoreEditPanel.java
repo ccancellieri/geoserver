@@ -17,6 +17,7 @@ import org.apache.wicket.model.CompoundPropertyModel;
 import org.apache.wicket.model.LoadableDetachableModel;
 import org.geoserver.catalog.Catalog;
 import org.geoserver.catalog.DataStoreInfo;
+import org.geoserver.catalog.impl.DataStoreInfoImpl;
 import org.geoserver.web.GeoServerApplication;
 import org.geoserver.web.data.store.StoreEditPanel;
 import org.geoserver.web.util.MapModel;
@@ -144,30 +145,30 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
         appendCachedOpMenu(this);
     }
 
-    private void clear(){
-//        this.storeInfo.getDataStore(null). status;
-//        try {
-//            status = new CacheStatus(CachedDataStoreFactory.createDataStoreUID(params));
-//            status.clear();
-//        } catch (IOException e) {
-//            LOGGER.log(Level.FINER, e.getMessage(), e);
-//        }
-//        CachedDataStoreFactory f = new CachedDataStoreFactory();
-//        CachedDataStore ds = null;
-//        try {
-//            ds = (CachedDataStore) f.createNewDataStore(params);
-//            if (ds != null) {
-//                CacheManager cacheManager = ds.getCacheManager();
-//                cacheManager.getStatus().clear();
-//                
-//            }
-//        } catch (IOException e) {
-//            LOGGER.log(Level.WARNING, e.getMessage(), e);
-//        } finally {
-//            if (ds!=null){
-//                ds.dispose();
-//            }
-//        }
+    private void clear() {
+        // this.storeInfo.getDataStore(null). status;
+        // try {
+        // status = new CacheStatus(CachedDataStoreFactory.createDataStoreUID(params));
+        // status.clear();
+        // } catch (IOException e) {
+        // LOGGER.log(Level.FINER, e.getMessage(), e);
+        // }
+        // CachedDataStoreFactory f = new CachedDataStoreFactory();
+        // CachedDataStore ds = null;
+        // try {
+        // ds = (CachedDataStore) f.createNewDataStore(params);
+        // if (ds != null) {
+        // CacheManager cacheManager = ds.getCacheManager();
+        // cacheManager.getStatus().clear();
+        //
+        // }
+        // } catch (IOException e) {
+        // LOGGER.log(Level.WARNING, e.getMessage(), e);
+        // } finally {
+        // if (ds!=null){
+        // ds.dispose();
+        // }
+        // }
     }
 
     /**
@@ -222,12 +223,12 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
             final List<Class<CachedOpSPI<?>>> listOfOp = new ArrayList<Class<CachedOpSPI<?>>>();
             for (CachedOpSPI<?> spi : cu.getCachedOps()) {
                 if (op.equals(spi.getOp())) {
-                    listOfOp.add((Class<CachedOpSPI<?>>)spi.getClass());
+                    listOfOp.add((Class<CachedOpSPI<?>>) spi.getClass());
                 }
             }
             final DropDownChoice<Class<CachedOpSPI<?>>> cachedOpDD = new DropDownChoice<Class<CachedOpSPI<?>>>(
-                    op.toString(), new org.geoserver.web.data.store.cache.MapModel(cacheStatusMap, op.toString()), listOfOp,
-                    new IChoiceRenderer<Class<CachedOpSPI<?>>>() {
+                    op.toString(), new org.geoserver.web.data.store.cache.MapModel(cacheStatusMap,
+                            op.toString()), listOfOp, new IChoiceRenderer<Class<CachedOpSPI<?>>>() {
 
                         /** serialVersionUID */
                         private static final long serialVersionUID = 1164860377053981031L;
@@ -275,7 +276,13 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
             final Map<String, Serializable> existingParameters, final String type,
             final Catalog catalog) {
 
-        final DataStoreInfo ds = catalog.getFactory().createDataStore();
+        final DataStoreInfo ds = new DataStoreInfoImpl(catalog, "id");
+        // we have to override the normal factory mechanism to use the 2 arguments constructor
+        // this is done to initialize the info ID to avoid overwrite passed params with the default ones.
+        // info = app.getCatalog().getFactory().createDataStore();
+        // / catalog.getFactory().createDataStore();
+        // look at
+        // org.geoserver.web.data.store.DefaultDataStoreEditPanel.DefaultDataStoreEditPanel(String, Form)
         if (type != null) {
             ds.setType(type);
         }
@@ -319,16 +326,20 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
 
         // if we are creating the datastore
         if (info == null) {
-            info = app.getCatalog().getFactory().createDataStore();
+            info = new DataStoreInfoImpl(app.getCatalog(), "id");
+            // we have to override the normal factory mechanism to use the 2 arguments constructor
+            // this is done to initialize the info ID to avoid overwrite passed params with the default ones.
+            // info = app.getCatalog().getFactory().createDataStore();
+            // look at
+            // org.geoserver.web.data.store.DefaultDataStoreEditPanel.DefaultDataStoreEditPanel(String, Form)
+            // set the type of the desired store
+            info.setType(store);
         }
 
         // info.setWorkspace(defaultWs);
         // info.setEnabled(true);
         // Form storeForm = new Form(storeEditForm.getId(), new CompoundPropertyModel<DataStoreInfo>(
         // info));
-
-        // set the type of the desired store
-        info.setType(store);
 
         final Form<DataStoreInfo> storeForm = new Form<DataStoreInfo>(store,
                 new CompoundPropertyModel<DataStoreInfo>(info));
@@ -350,24 +361,24 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
     @Override
     public boolean onSave() {
 
-        params.put(CachedDataStoreFactory.SOURCE_PARAMS_KEY, (Serializable) sourceForm
-                .getModelObject().getConnectionParameters());
+        params.put(CachedDataStoreFactory.SOURCE_PARAMS_KEY, CacheUtils.toText(sourceForm
+                .getModelObject().getConnectionParameters()));
 
-        params.put(CachedDataStoreFactory.CACHE_PARAMS_KEY, (Serializable) cacheForm
-                .getModelObject().getConnectionParameters());
+        params.put(CachedDataStoreFactory.CACHE_PARAMS_KEY, CacheUtils.toText(cacheForm
+                .getModelObject().getConnectionParameters()));
 
-//        String oldName = (String) params.get(CachedDataStoreFactory.NAME_KEY);
+        // String oldName = (String) params.get(CachedDataStoreFactory.NAME_KEY);
         String name = (String) this.storeInfo.getName();
-        //if (!oldName.isEmpty() && !oldName.equals(name)) {
-        //    clear();
-        //}
+        // if (!oldName.isEmpty() && !oldName.equals(name)) {
+        // clear();
+        // }
         params.put(CachedDataStoreFactory.NAME_KEY, (Serializable) name);
 
-//        String oldNameSpace = (String) params.get(CachedDataStoreFactory.NAMESPACE_KEY);
+        // String oldNameSpace = (String) params.get(CachedDataStoreFactory.NAMESPACE_KEY);
         String nameSpace = (String) this.storeInfo.getWorkspace().getName();
-//        if (!oldNameSpace.isEmpty() && !oldNameSpace.equals(nameSpace)) {
-//            clear();
-//        }
+        // if (!oldNameSpace.isEmpty() && !oldNameSpace.equals(nameSpace)) {
+        // clear();
+        // }
         params.put(CachedDataStoreFactory.NAMESPACE_KEY, (Serializable) nameSpace);
 
         params.put(CachedDataStoreFactory.CACHEDOPSPI_PARAMS_KEY,
