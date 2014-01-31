@@ -1,14 +1,20 @@
 package org.geoserver.web.data.store.cache;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import net.sf.ehcache.CacheManager;
 
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.form.OnChangeAjaxBehavior;
+import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.markup.html.form.DropDownChoice;
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.IChoiceRenderer;
@@ -16,12 +22,18 @@ import org.apache.wicket.markup.html.panel.Panel;
 import org.apache.wicket.model.CompoundPropertyModel;
 import org.apache.wicket.model.LoadableDetachableModel;
 import org.geoserver.catalog.Catalog;
+import org.geoserver.catalog.CatalogFactory;
 import org.geoserver.catalog.DataStoreInfo;
+import org.geoserver.catalog.StoreInfo;
 import org.geoserver.catalog.impl.DataStoreInfoImpl;
+import org.geoserver.catalog.impl.DefaultCatalogFacade;
 import org.geoserver.web.GeoServerApplication;
+import org.geoserver.web.data.store.ParamInfo;
 import org.geoserver.web.data.store.StoreEditPanel;
 import org.geoserver.web.util.MapModel;
 import org.geotools.data.DataAccessFactory;
+import org.geotools.data.DataAccessFactory.Param;
+import org.geotools.data.cache.datastore.CachedDataStore;
 import org.geotools.data.cache.datastore.CachedDataStoreFactory;
 import org.geotools.data.cache.op.CachedOpSPI;
 import org.geotools.data.cache.op.Operation;
@@ -47,9 +59,6 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
 
     private final Map<String, Serializable> params;
 
-    // // instatiated only if needed and used as shared variable for clear purpose only
-    // private CachedDataStore cds;
-
     public CachedDataStoreEditPanel(final String componentId,
             final Form<DataStoreInfo> storeEditForm) throws InstantiationException,
             IllegalAccessException, ClassNotFoundException {
@@ -59,7 +68,7 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
 
         storeInfo = (DataStoreInfo) storeEditForm.getModelObject();
         params = storeInfo.getConnectionParameters();
-
+        
         final List<String> stores = new ArrayList<String>(CachedDataStoreFactory
                 .getAvailableDataStores().keySet());
 
@@ -146,29 +155,28 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
     }
 
     private void clear() {
-        // this.storeInfo.getDataStore(null). status;
-        // try {
-        // status = new CacheStatus(CachedDataStoreFactory.createDataStoreUID(params));
-        // status.clear();
-        // } catch (IOException e) {
-        // LOGGER.log(Level.FINER, e.getMessage(), e);
-        // }
-        // CachedDataStoreFactory f = new CachedDataStoreFactory();
-        // CachedDataStore ds = null;
-        // try {
-        // ds = (CachedDataStore) f.createNewDataStore(params);
-        // if (ds != null) {
-        // CacheManager cacheManager = ds.getCacheManager();
-        // cacheManager.getStatus().clear();
-        //
-        // }
-        // } catch (IOException e) {
-        // LOGGER.log(Level.WARNING, e.getMessage(), e);
-        // } finally {
-        // if (ds!=null){
-        // ds.dispose();
-        // }
-        // }
+
+        // getCatalog().getStore(getId(), CachedDataStore.class);
+        // DataStoreInfo info=getCatalog().getStore(getId(), DataStoreInfo.class);
+        if (storeInfo != null) {
+            CachedDataStore ds = null;
+            try {
+//                 CachedDataStoreFactory f = new CachedDataStoreFactory();
+//                 ds = (CachedDataStore) f.createNewDataStore(params);
+                ds = (CachedDataStore) storeInfo.getDataStore(null);
+
+                if (ds != null) {
+                    org.geotools.data.cache.op.CacheManager cacheManager = ds.getCacheManager();
+                    cacheManager.clear();
+                }
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, e.getMessage(), e);
+            } finally {
+                if (ds != null) {
+                    ds.dispose();
+                }
+            }
+        }
     }
 
     /**
@@ -218,6 +226,19 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
             cacheStatusMap = new HashMap<String, CachedOpSPI<?>>();
         }
 
+        // append clear button
+        parent.add(new AjaxButton("clear") {
+
+            /** serialVersionUID */
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
+                clear();
+            }
+        });
+
+        // append operations
         final CacheUtils cu = CacheUtils.getCacheUtils();
         for (Operation op : Operation.values()) {
             final List<Class<CachedOpSPI<?>>> listOfOp = new ArrayList<Class<CachedOpSPI<?>>>();
@@ -259,37 +280,67 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
         }
     }
 
-    // private Map<String, Serializable> parseMap(String input, StoreInfo info) {
-    // // final Map<String, Serializable> map = new HashMap<String, Serializable>();
-    // input = input.substring(1, input.length() - 1);
-    // for (String pair : input.split(",")) {
-    // String[] kv = pair.split("=");
-    // ParamInfo pInfo = new ParamInfo(new Param(kv[0].trim()));
-    // pInfo.setValue(kv[1].trim());
-    // this.applyParamDefault(pInfo, info);
-    // // map.put(kv[0], kv[1]);
-    // }
-    // return info.getConnectionParameters();
-    // }
-
+    /**
+     * note that some parts of this implementation is taken from: {@link StoreEditPanel#applyDataStoreParamsDefaults(StoreInfo)}
+     * 
+     * the namespace part is needed to avoid the following exception on workspace/namespace Caused by: java.lang.NullPointerException at
+     * {@link DefaultCatalogFacade#getNamespaceByURI(DefaultCatalogFacade)}
+     * 
+     * @param existingParameters
+     * @param type
+     * @param catalog
+     * @return
+     */
     private static DataStoreInfo getDataStoreInfo(
             final Map<String, Serializable> existingParameters, final String type,
             final Catalog catalog) {
 
-        final DataStoreInfo ds = new DataStoreInfoImpl(catalog, "id");
-        // we have to override the normal factory mechanism to use the 2 arguments constructor
-        // this is done to initialize the info ID to avoid overwrite passed params with the default ones.
-        // info = app.getCatalog().getFactory().createDataStore();
-        // / catalog.getFactory().createDataStore();
-        // look at
-        // org.geoserver.web.data.store.DefaultDataStoreEditPanel.DefaultDataStoreEditPanel(String, Form)
+        final CatalogFactory factory = catalog.getFactory();
+
+        final DataStoreInfo ds = factory.createDataStore();
+
+        final DataStoreInfoImpl dsInfo = (DataStoreInfoImpl) ds;
+        if (dsInfo.getId() == null) {
+            dsInfo.setId("id");
+        }
         if (type != null) {
-            ds.setType(type);
+            dsInfo.setType(type);
         }
         if (existingParameters != null) {
-            ds.getConnectionParameters().putAll(existingParameters);
+            dsInfo.getConnectionParameters().putAll(existingParameters);
+        } else {
+            final DataAccessFactory dsFactory;
+            try {
+                dsFactory = catalog.getResourcePool().getDataStoreFactory(dsInfo);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            final Param[] dsParams = dsFactory.getParametersInfo();
+            for (Param p : dsParams) {
+                ParamInfo paramInfo = new ParamInfo(p);
+                applyParamDefault(catalog, paramInfo, dsInfo);
+            }
         }
         return ds;
+    }
+
+    /**
+     * {@link StoreEditPanel#applyDataStoreParamsDefaults(StoreInfo)}
+     * 
+     * @param catalog
+     * @param paramInfo
+     * @param info
+     */
+    private static void applyParamDefault(Catalog catalog, ParamInfo paramInfo, StoreInfo info) {
+        Serializable defValue = paramInfo.getValue();
+        if ("namespace".equals(paramInfo.getName())) {
+            defValue = catalog.getDefaultNamespace().getURI();
+        } else if (URL.class == paramInfo.getBinding() && null == defValue) {
+            defValue = "file:data/example.extension";
+        } else {
+            defValue = paramInfo.getValue();
+        }
+        info.getConnectionParameters().put(paramInfo.getName(), defValue);
     }
 
     private static final class DetachableList extends LoadableDetachableModel<List<String>> {
@@ -317,8 +368,8 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
         }
     }
 
-    private static Form<DataStoreInfo> updateDataStorePanel(final Panel parent,
-            final Form<?> storeEditForm, DataStoreInfo info, String store, String name) {
+    private Form<DataStoreInfo> updateDataStorePanel(final Panel parent,
+            final Form<?> storeEditForm, DataStoreInfo info, String store, String panelName) {
 
         GeoServerApplication app = (GeoServerApplication) parent.getApplication();
         final DataAccessFactory storeFactory = CachedDataStoreFactory.getAvailableDataStores().get(
@@ -326,17 +377,20 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
 
         // if we are creating the datastore
         if (info == null) {
-            info = new DataStoreInfoImpl(app.getCatalog(), "id");
+            // storeFactory.createDataStore(params);
+            // info = new DataStoreInfoImpl(app.getCatalog(), null);
             // we have to override the normal factory mechanism to use the 2 arguments constructor
             // this is done to initialize the info ID to avoid overwrite passed params with the default ones.
-            // info = app.getCatalog().getFactory().createDataStore();
+            info = getDataStoreInfo(null, store, app.getCatalog());
+            // app.getCatalog().getFactory().createDataStore();
             // look at
             // org.geoserver.web.data.store.DefaultDataStoreEditPanel.DefaultDataStoreEditPanel(String, Form)
             // set the type of the desired store
-            info.setType(store);
+            // info.setType(store);
+            // ((DataStoreInfoImpl) info).setId("id");
+            // info.setWorkspace(storeInfo.getWorkspace());
         }
 
-        // info.setWorkspace(defaultWs);
         // info.setEnabled(true);
         // Form storeForm = new Form(storeEditForm.getId(), new CompoundPropertyModel<DataStoreInfo>(
         // info));
@@ -344,7 +398,7 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
         final Form<DataStoreInfo> storeForm = new Form<DataStoreInfo>(store,
                 new CompoundPropertyModel<DataStoreInfo>(info));
         storeForm.setOutputMarkupId(true);
-        final Panel storeEditPanel = DataStoreExtensionPoints.getStoreEditPanel(name, storeForm,
+        final Panel storeEditPanel = DataStoreExtensionPoints.getStoreEditPanel(panelName, storeForm,
                 storeFactory, app);
         parent.addOrReplace(storeEditPanel);
         storeEditPanel.setOutputMarkupId(true);
@@ -361,11 +415,11 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
     @Override
     public boolean onSave() {
 
-        params.put(CachedDataStoreFactory.SOURCE_PARAMS_KEY, CacheUtils.toText(sourceForm
-                .getModelObject().getConnectionParameters()));
+        params.put(CachedDataStoreFactory.SOURCE_PARAMS_KEY,
+                CacheUtils.toText(sourceForm.getModelObject().getConnectionParameters()));
 
-        params.put(CachedDataStoreFactory.CACHE_PARAMS_KEY, CacheUtils.toText(cacheForm
-                .getModelObject().getConnectionParameters()));
+        params.put(CachedDataStoreFactory.CACHE_PARAMS_KEY,
+                CacheUtils.toText(cacheForm.getModelObject().getConnectionParameters()));
 
         // String oldName = (String) params.get(CachedDataStoreFactory.NAME_KEY);
         String name = (String) this.storeInfo.getName();

@@ -6,22 +6,27 @@
 
 	<wicket:panel wicket:id="parametersPanel">
 		<fieldset>
-			<legend>
-				<span><wicket:message key="connectionParameters">Connection Parameters</wicket:message></span>
-			</legend>
 			<table>
 				<tr>
-					<td><span>Bounds cached op: 
-					<select wicket:id="bounds"
+					<td><span>Clear the store cache: <button wicket:id="clear"
+							style="width: auto" class="button">clear</button></span></td>
+				</tr>
+				<tr>
+					<legend>
+						<span><wicket:message key="connectionParameters">Connection Parameters</wicket:message></span>
+					</legend>
+				</tr>
+				<tr>
+					<td><span>Bounds cached op: <select wicket:id="bounds"
 							style="width: auto" class="text" /></span></td>
 				</tr>
 				<tr>
-					<td><span>Count: <select wicket:id="count" style="width: auto"
-							class="text" /></span></td>
+					<td><span>Count: <select wicket:id="count"
+							style="width: auto" class="text" /></span></td>
 				</tr>
 				<tr>
-					<td><span>Feature Collection: <select wicket:id="featureCollection"
-							style="width: auto" class="text" /></span></td>
+					<td><span>Feature Collection: <select
+							wicket:id="featureCollection" style="width: auto" class="text" /></span></td>
 				</tr>
 				<tr>
 					<td><span>Writer: <select wicket:id="writer"
@@ -36,8 +41,8 @@
 							style="width: auto" class="text" /></span></td>
 				</tr>
 				<tr>
-					<td><span>FeatureSource: <select wicket:id="featureSource"
-							style="width: auto" class="text" /></span></td>
+					<td><span>FeatureSource: <select
+							wicket:id="featureSource" style="width: auto" class="text" /></span></td>
 				</tr>
 				<tr>
 					<td><span>FeatureType: <select wicket:id="featureType"
@@ -48,8 +53,8 @@
 							style="width: auto" class="text" /></span></td>
 				</tr>
 				<tr>
-					<td><span>Next: <select wicket:id="next" style="width: auto"
-							class="text" /></span></td>
+					<td><span>Next: <select wicket:id="next"
+							style="width: auto" class="text" /></span></td>
 				</tr>
 			</table>
 			<table>
