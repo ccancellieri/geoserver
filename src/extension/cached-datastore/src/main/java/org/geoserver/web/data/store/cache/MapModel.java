@@ -3,17 +3,19 @@ package org.geoserver.web.data.store.cache;
 import java.util.Map;
 
 import org.apache.wicket.model.IModel;
+import org.geotools.data.cache.op.CachedOp;
 import org.geotools.data.cache.op.CachedOpSPI;
-import org.geotools.data.cache.utils.CacheUtils;
+import org.geotools.data.cache.op.CachedOpStatus;
 
-public  class MapModel implements IModel<Class<CachedOpSPI<?>>> {
+public class MapModel<K,T> implements IModel<Class<CachedOpSPI<CachedOpStatus<K>, CachedOp<K,T>, K, T>>> {
 
-    private final Map<String, CachedOpSPI<?>> cacheStatusMap;
+    private final Map<String, CachedOpSPI<CachedOpStatus<K>, CachedOp<K,T>, K, T>> cacheStatusMap;
+
     private final String opName;
-    
-    public MapModel(Map<String, CachedOpSPI<?>> cacheStatusMap, String opName) {
-        this.opName=opName;
-        this.cacheStatusMap=cacheStatusMap;
+
+    public MapModel(Map<String, CachedOpSPI<CachedOpStatus<K>, CachedOp<K,T>, K, T>> cacheStatusMap, String opName) {
+        this.opName = opName;
+        this.cacheStatusMap = cacheStatusMap;
     }
 
     /** serialVersionUID */
@@ -25,21 +27,22 @@ public  class MapModel implements IModel<Class<CachedOpSPI<?>>> {
     }
 
     @Override
-    public Class<CachedOpSPI<?>> getObject() {
-        CachedOpSPI<?> obj=cacheStatusMap.get(opName);
-        if (obj!=null)
-            return (Class<CachedOpSPI<?>>) obj.getClass();
+    public Class<CachedOpSPI<CachedOpStatus<K>, CachedOp<K,T>, K, T>> getObject() {
+        CachedOpSPI<?, ?, ?, ?> obj = cacheStatusMap.get(opName);
+        if (obj != null)
+            return (Class<CachedOpSPI<CachedOpStatus<K>, CachedOp<K,T>, K, T>>) obj.getClass();
         else
             return null;
     }
 
     @Override
-    public void setObject(Class<CachedOpSPI<?>> object) {
-        if (object==null){
+    public void setObject(Class<CachedOpSPI<CachedOpStatus<K>, CachedOp<K,T>, K, T>> object) {
+        if (object == null) {
             cacheStatusMap.put(opName, null);
         } else {
             try {
-                cacheStatusMap.put(opName, (CachedOpSPI<?>) Class.forName(object.getName()).newInstance());
+                cacheStatusMap.put(opName, (CachedOpSPI<CachedOpStatus<K>, CachedOp<K,T>, K, T>) Class
+                        .forName(object.getName()).newInstance());
             } catch (InstantiationException e) {
                 throw new IllegalArgumentException(e);
             } catch (IllegalAccessException e) {

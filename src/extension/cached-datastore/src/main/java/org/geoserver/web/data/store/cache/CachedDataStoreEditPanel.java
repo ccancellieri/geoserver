@@ -10,8 +10,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import net.sf.ehcache.CacheManager;
-
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.form.OnChangeAjaxBehavior;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
@@ -33,9 +31,12 @@ import org.geoserver.web.data.store.StoreEditPanel;
 import org.geoserver.web.util.MapModel;
 import org.geotools.data.DataAccessFactory;
 import org.geotools.data.DataAccessFactory.Param;
+import org.geotools.data.cache.datastore.CacheManager;
 import org.geotools.data.cache.datastore.CachedDataStore;
 import org.geotools.data.cache.datastore.CachedDataStoreFactory;
+import org.geotools.data.cache.op.CachedOp;
 import org.geotools.data.cache.op.CachedOpSPI;
+import org.geotools.data.cache.op.CachedOpStatus;
 import org.geotools.data.cache.op.Operation;
 import org.geotools.data.cache.utils.CacheUtils;
 import org.geotools.data.cache.utils.CachedOpSPIMapParam;
@@ -49,7 +50,7 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
 
     private static final Logger LOGGER = Logging.getLogger("org.geoserver.web.data.store.cache");
 
-    private Map<String, CachedOpSPI<?>> cacheStatusMap;
+    private Map<String, CachedOpSPI<CachedOpStatus<Object>, CachedOp<Object, Object>, Object, Object>> cacheStatusMap;
 
     private Form<DataStoreInfo> sourceForm;
 
@@ -68,7 +69,7 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
 
         storeInfo = (DataStoreInfo) storeEditForm.getModelObject();
         params = storeInfo.getConnectionParameters();
-        
+
         final List<String> stores = new ArrayList<String>(CachedDataStoreFactory
                 .getAvailableDataStores().keySet());
 
@@ -157,17 +158,16 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
     private void clear() {
 
         // getCatalog().getStore(getId(), CachedDataStore.class);
-        // DataStoreInfo info=getCatalog().getStore(getId(), DataStoreInfo.class);
+//        DataStoreInfo info = getCatalog().getStore(getId(), DataStoreInfo.class);
         if (storeInfo != null) {
             CachedDataStore ds = null;
             try {
-//                 CachedDataStoreFactory f = new CachedDataStoreFactory();
-//                 ds = (CachedDataStore) f.createNewDataStore(params);
+                // CachedDataStoreFactory f = new CachedDataStoreFactory();
+                // ds = (CachedDataStore) f.createNewDataStore(params);
                 ds = (CachedDataStore) storeInfo.getDataStore(null);
 
                 if (ds != null) {
-                    org.geotools.data.cache.op.CacheManager cacheManager = ds.getCacheManager();
-                    cacheManager.clear();
+                    ds.clear();
                 }
             } catch (Exception e) {
                 LOGGER.log(Level.SEVERE, e.getMessage(), e);
@@ -218,12 +218,12 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
         final Object cacheStatusMapObj = params.get(CachedDataStoreFactory.CACHEDOPSPI_PARAMS_KEY);
         if (cacheStatusMapObj != null) {
             if (cacheStatusMapObj instanceof Map) {
-                cacheStatusMap = (Map<String, CachedOpSPI<?>>) cacheStatusMapObj;
+                cacheStatusMap = (Map<String, CachedOpSPI<CachedOpStatus<Object>, CachedOp<Object, Object>, Object, Object>>) cacheStatusMapObj;
             } else /* if (paramObj instanceof String) */{
                 cacheStatusMap = CachedOpSPIMapParam.parseSPIMap((String) cacheStatusMapObj);
             }
         } else {
-            cacheStatusMap = new HashMap<String, CachedOpSPI<?>>();
+            cacheStatusMap = new HashMap<String, CachedOpSPI<CachedOpStatus<Object>, CachedOp<Object, Object>, Object, Object>>();
         }
 
         // append clear button
@@ -241,26 +241,32 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
         // append operations
         final CacheUtils cu = CacheUtils.getCacheUtils();
         for (Operation op : Operation.values()) {
-            final List<Class<CachedOpSPI<?>>> listOfOp = new ArrayList<Class<CachedOpSPI<?>>>();
-            for (CachedOpSPI<?> spi : cu.getCachedOps()) {
+            final List<Class<CachedOpSPI<CachedOpStatus<?>, CachedOp<?, ?>, ?, ?>>> listOfOp = new ArrayList<Class<CachedOpSPI<CachedOpStatus<?>, CachedOp<?, ?>, ?, ?>>>();
+            for (CachedOpSPI<?, ?, ?, ?> spi : cu.getCachedOps()) {
                 if (op.equals(spi.getOp())) {
-                    listOfOp.add((Class<CachedOpSPI<?>>) spi.getClass());
+                    listOfOp.add((Class<CachedOpSPI<CachedOpStatus<?>, CachedOp<?, ?>, ?, ?>>) spi
+                            .getClass());
                 }
             }
-            final DropDownChoice<Class<CachedOpSPI<?>>> cachedOpDD = new DropDownChoice<Class<CachedOpSPI<?>>>(
-                    op.toString(), new org.geoserver.web.data.store.cache.MapModel(cacheStatusMap,
-                            op.toString()), listOfOp, new IChoiceRenderer<Class<CachedOpSPI<?>>>() {
+            final DropDownChoice<Class<CachedOpSPI<CachedOpStatus<?>, CachedOp<?, ?>, ?, ?>>> cachedOpDD = new DropDownChoice<Class<CachedOpSPI<CachedOpStatus<?>, CachedOp<?, ?>, ?, ?>>>(
+                    op.toString(),
+                    new org.geoserver.web.data.store.cache.MapModel(cacheStatusMap, op.toString()),
+                    listOfOp,
+                    new IChoiceRenderer<Class<CachedOpSPI<CachedOpStatus<?>, CachedOp<?, ?>, ?, ?>>>() {
 
                         /** serialVersionUID */
                         private static final long serialVersionUID = 1164860377053981031L;
 
                         @Override
-                        public Object getDisplayValue(Class<CachedOpSPI<?>> object) {
+                        public Object getDisplayValue(
+                                Class<CachedOpSPI<CachedOpStatus<?>, CachedOp<?, ?>, ?, ?>> object) {
                             return object;
                         }
 
                         @Override
-                        public String getIdValue(Class<CachedOpSPI<?>> object, int index) {
+                        public String getIdValue(
+                                Class<CachedOpSPI<CachedOpStatus<?>, CachedOp<?, ?>, ?, ?>> object,
+                                int index) {
                             return object.getName();
                         }
 
@@ -398,8 +404,8 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
         final Form<DataStoreInfo> storeForm = new Form<DataStoreInfo>(store,
                 new CompoundPropertyModel<DataStoreInfo>(info));
         storeForm.setOutputMarkupId(true);
-        final Panel storeEditPanel = DataStoreExtensionPoints.getStoreEditPanel(panelName, storeForm,
-                storeFactory, app);
+        final Panel storeEditPanel = DataStoreExtensionPoints.getStoreEditPanel(panelName,
+                storeForm, storeFactory, app);
         parent.addOrReplace(storeEditPanel);
         storeEditPanel.setOutputMarkupId(true);
         // storeEditPanel.setVisible(true);
