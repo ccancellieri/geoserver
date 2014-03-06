@@ -169,8 +169,10 @@ public class CachedDataStoreEditPanel extends StoreEditPanel {
                 if (ds != null) {
                     ds.clear();
                 }
+                
             } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, e.getMessage(), e);
+                // eat exception
+                // LOGGER.log(Level.SEVERE, e.getMessage(), e);
             } finally {
                 if (ds != null) {
                     ds.dispose();
