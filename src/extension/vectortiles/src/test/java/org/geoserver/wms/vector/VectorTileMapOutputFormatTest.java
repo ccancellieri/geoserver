@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import org.apache.wicket.spring.test.ApplicationContextMock;
 import org.geoserver.catalog.SLDHandler;
 import org.geoserver.config.GeoServerLoader;
@@ -42,6 +43,7 @@ import org.geotools.referencing.CRS;
 import org.geotools.styling.NamedLayer;
 import org.geotools.styling.Style;
 import org.geotools.styling.StyledLayerDescriptor;
+import org.geotools.util.factory.Hints;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -228,6 +230,8 @@ public class VectorTileMapOutputFormatTest {
                         any(ReferencedEnvelope.class),
                         any(Rectangle.class),
                         any(CoordinateReferenceSystem.class),
+                        any(Set.class),
+                        any(Hints.class),
                         eq(expectedBuffer));
     }
 
