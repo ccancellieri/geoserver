@@ -5,7 +5,6 @@
  */
 package org.geoserver.monitor.hib;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -27,8 +26,8 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.orm.hibernate3.HibernateCallback;
-import org.springframework.orm.hibernate3.HibernateTemplate;
+import org.springframework.orm.hibernate5.HibernateCallback;
+import org.springframework.orm.hibernate5.HibernateTemplate;
 
 public class HibernateMonitorDAO2 implements MonitorDAO, DisposableBean {
 
@@ -238,7 +237,7 @@ public class HibernateMonitorDAO2 implements MonitorDAO, DisposableBean {
         return hib.execute(
                 new HibernateCallback<List<RequestData>>() {
                     public List<RequestData> doInHibernate(Session session)
-                            throws HibernateException, SQLException {
+                            throws HibernateException {
                         List objs = new ArrayList<>();
                         org.hibernate.Query query = toQuery(q, objs);
 
@@ -328,8 +327,7 @@ public class HibernateMonitorDAO2 implements MonitorDAO, DisposableBean {
     protected <T> List<T> all(final Class<T> clazz, final String orderBy) {
         return hib.execute(
                 new HibernateCallback<List<T>>() {
-                    public List<T> doInHibernate(Session session)
-                            throws HibernateException, SQLException {
+                    public List<T> doInHibernate(Session session) throws HibernateException {
                         StringBuffer sb = new StringBuffer();
                         sb.append("SELECT x ");
                         sb.append("FROM ").append(clazz.getSimpleName()).append(" x ");
@@ -626,8 +624,7 @@ public class HibernateMonitorDAO2 implements MonitorDAO, DisposableBean {
         public void run() {
             hib.execute(
                     new HibernateCallback() {
-                        public Object doInHibernate(Session session)
-                                throws HibernateException, SQLException {
+                        public Object doInHibernate(Session session) throws HibernateException {
                             Transaction tx = session.beginTransaction();
                             data.setId((Long) session.save(data));
                             // mergeLayers(data, session);
@@ -649,15 +646,14 @@ public class HibernateMonitorDAO2 implements MonitorDAO, DisposableBean {
         public void run() {
             hib.execute(
                     new HibernateCallback() {
-                        public Object doInHibernate(Session session)
-                                throws HibernateException, SQLException {
+                        public Object doInHibernate(Session session) throws HibernateException {
                             try {
                                 Transaction tx = session.beginTransaction();
                                 // mergeLayers(data, session);
                                 session.update(data);
                                 tx.commit();
                             } catch (HibernateException e) {
-                                if (tasks != null) tasks.print();
+                                // if (tasks != null) logtasks.print();
                                 throw e;
                             }
                             return null;

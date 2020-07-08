@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
-import org.apache.commons.io.IOUtils;
 import org.geoserver.hibernate.HibUtil;
 import org.geoserver.monitor.Filter;
 import org.geoserver.monitor.MonitorConfig.Mode;
@@ -45,7 +44,7 @@ public class HibernateMonitorDAO2Test extends MonitorDAOTestSupport {
         p.put("driver", "org.h2.Driver");
         p.put("url", "jdbc:h2:mem:monitoring");
         File file = new File("./target/monitoring/db.properties");
-        
+
         if (!file.getParentFile().exists()) {
             assertTrue(file.getParentFile().mkdirs());
         }
@@ -65,7 +64,7 @@ public class HibernateMonitorDAO2Test extends MonitorDAOTestSupport {
         ctx.refresh();
         HibernateMonitorDAO2 hibdao = (HibernateMonitorDAO2) ctx.getBean("hibMonitorDAO");
         hibdao.setSync(Sync.SYNC);
-        hibdao.setMode(Mode.HYBRID);
+        hibdao.setMode(Mode.HISTORY);
         dao = hibdao;
 
         setUpData();
@@ -73,8 +72,8 @@ public class HibernateMonitorDAO2Test extends MonitorDAOTestSupport {
 
     @AfterClass
     public static void destroy() throws Exception {
-        dao.dispose();
-        ctx.close();
+        if (dao != null) dao.dispose();
+        if (ctx != null) ctx.close();
         DeleteDbFiles.execute("target/monitoring", "monitoring", false);
     }
 

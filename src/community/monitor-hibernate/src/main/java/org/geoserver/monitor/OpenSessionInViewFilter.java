@@ -16,5 +16,5 @@ import org.geoserver.filters.SpringDelegatingFilter;
  * @author Andrea Aime - GeoSolutions
  */
 public class OpenSessionInViewFilter
-        extends org.springframework.orm.hibernate3.support.OpenSessionInViewFilter
+        extends org.springframework.orm.hibernate5.support.OpenSessionInViewFilter
         implements GeoServerFilter {}

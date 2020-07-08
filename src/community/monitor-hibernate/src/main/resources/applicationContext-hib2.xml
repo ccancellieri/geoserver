@@ -34,7 +34,7 @@
     </bean>
     
     
- <bean id="hibSessionFactory" class="org.springframework.orm.hibernate3.LocalSessionFactoryBean">
+ <bean id="hibSessionFactory" class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
     <property name="dataSource" ref="monitorDataSource"/>
     <property name="mappingResources">
       <list>
