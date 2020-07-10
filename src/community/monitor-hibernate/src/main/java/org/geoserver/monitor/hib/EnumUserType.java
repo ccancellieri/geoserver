@@ -12,6 +12,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Properties;
 import org.hibernate.HibernateException;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.EnhancedUserType;
 import org.hibernate.usertype.ParameterizedType;
 
@@ -23,6 +24,8 @@ import org.hibernate.usertype.ParameterizedType;
 public class EnumUserType implements EnhancedUserType, ParameterizedType {
 
     private Class<Enum> enumClass;
+
+    public EnumUserType() {}
 
     public void setParameterValues(Properties parameters) {
         String enumClassName = parameters.getProperty("enumClassName");
@@ -57,21 +60,6 @@ public class EnumUserType implements EnhancedUserType, ParameterizedType {
         return false;
     }
 
-    public Object nullSafeGet(ResultSet rs, String[] names, Object owner)
-            throws HibernateException, SQLException {
-        String name = rs.getString(names[0]);
-        return rs.wasNull() ? null : Enum.valueOf(enumClass, name);
-    }
-
-    public void nullSafeSet(PreparedStatement st, Object value, int index)
-            throws HibernateException, SQLException {
-        if (value == null) {
-            st.setNull(index, Types.VARCHAR);
-        } else {
-            st.setString(index, ((Enum) value).name());
-        }
-    }
-
     public Object replace(Object original, Object target, Object owner) throws HibernateException {
         return original;
     }
@@ -94,5 +82,24 @@ public class EnumUserType implements EnhancedUserType, ParameterizedType {
 
     public String toXMLString(Object value) {
         return ((Enum) value).name();
+    }
+
+    @Override
+    public Object nullSafeGet(
+            ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner)
+            throws HibernateException, SQLException {
+        String name = rs.getString(names[0]);
+        return rs.wasNull() ? null : Enum.valueOf(enumClass, name);
+    }
+
+    @Override
+    public void nullSafeSet(
+            PreparedStatement st, Object value, int index, SharedSessionContractImplementor session)
+            throws HibernateException, SQLException {
+        if (value == null) {
+            st.setNull(index, Types.VARCHAR);
+        } else {
+            st.setString(index, ((Enum) value).name());
+        }
     }
 }

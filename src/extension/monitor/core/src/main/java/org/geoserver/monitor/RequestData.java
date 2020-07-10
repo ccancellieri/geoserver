@@ -173,6 +173,18 @@ public class RequestData implements Serializable {
 
     private Long labellingProcessingTime;
 
+    public long getInternalid() {
+        return internalid;
+    }
+
+    public void setInternalid(long internalid) {
+        this.internalid = internalid;
+    }
+
+    public RequestData() {
+        super();
+    }
+
     public long getId() {
         return id;
     }

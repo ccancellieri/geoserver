@@ -16,8 +16,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import org.geoserver.platform.GeoServerExtensions;
-import org.hibernate.Hibernate;
 import org.hibernate.HibernateException;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
 
 public class ErrorUserType implements UserType {
@@ -29,6 +29,8 @@ public class ErrorUserType implements UserType {
      * <p>http://opensource.atlassian.com/projects/hibernate/browse/EJB-24
      */
     public static String USE_HIBERNATE_BLOB = "USE_HIBERNATE_BLOB";
+
+    public ErrorUserType() {}
 
     public Object assemble(Serializable cached, Object owner) throws HibernateException {
         return cached;
@@ -54,8 +56,28 @@ public class ErrorUserType implements UserType {
         return false;
     }
 
-    public Object nullSafeGet(ResultSet rs, String[] names, Object owner)
+    public Object replace(Object original, Object target, Object owner) throws HibernateException {
+        return target;
+    }
+
+    public Class returnedClass() {
+        return Throwable.class;
+    }
+
+    public int[] sqlTypes() {
+        return new int[] {Types.BLOB};
+    }
+
+    boolean useHibernateBlob() {
+        String prop = GeoServerExtensions.getProperty(USE_HIBERNATE_BLOB);
+        return !("no".equals(prop) || "false".equals(prop));
+    }
+
+    @Override
+    public Object nullSafeGet(
+            ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner)
             throws HibernateException, SQLException {
+        //
         Blob blob = rs.getBlob(names[0]);
         if (blob == null) {
             return null;
@@ -84,7 +106,9 @@ public class ErrorUserType implements UserType {
         }
     }
 
-    public void nullSafeSet(PreparedStatement st, Object value, int index)
+    @Override
+    public void nullSafeSet(
+            PreparedStatement st, Object value, int index, SharedSessionContractImplementor session)
             throws HibernateException, SQLException {
         if (value != null) {
             try {
@@ -94,7 +118,7 @@ public class ErrorUserType implements UserType {
                 out.flush();
 
                 if (useHibernateBlob()) {
-                    st.setBlob(index, Hibernate.createBlob(bytes.toByteArray()));
+                    st.setBlob(index, session.getLobCreator().createBlob(bytes.toByteArray()));
                 } else {
                     st.setBytes(index, bytes.toByteArray());
                 }
@@ -107,22 +131,5 @@ public class ErrorUserType implements UserType {
             st.setNull(index, Types.BLOB);
             // st.setBytes(index, null);
         }
-    }
-
-    public Object replace(Object original, Object target, Object owner) throws HibernateException {
-        return target;
-    }
-
-    public Class returnedClass() {
-        return Throwable.class;
-    }
-
-    public int[] sqlTypes() {
-        return new int[] {Types.BLOB};
-    }
-
-    boolean useHibernateBlob() {
-        String prop = GeoServerExtensions.getProperty(USE_HIBERNATE_BLOB);
-        return !("no".equals(prop) || "false".equals(prop));
     }
 }

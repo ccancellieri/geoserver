@@ -30,6 +30,10 @@ public class MonitoringDataSource extends BasicDataSource implements DisposableB
     MonitorConfig config;
     GeoServerDataDirectory dataDirectory;
 
+    public MonitoringDataSource() {
+        super();
+    }
+
     public void setConfig(MonitorConfig config) {
         this.config = config;
     }

@@ -17,6 +17,7 @@ import org.geotools.referencing.CRS;
 import org.geotools.util.Utilities;
 import org.geotools.util.logging.Logging;
 import org.hibernate.HibernateException;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.ParameterizedType;
 import org.hibernate.usertype.UserType;
 import org.opengis.geometry.BoundingBox;
@@ -35,6 +36,8 @@ public class BoundingBoxType implements UserType, ParameterizedType {
     private static final Logger LOGGER = Logging.getLogger(BoundingBoxType.class);
 
     boolean storeCRSAsWKT = false;
+
+    public BoundingBoxType() {}
 
     public void setParameterValues(Properties parameters) {
         if (parameters != null) {
@@ -76,7 +79,24 @@ public class BoundingBoxType implements UserType, ParameterizedType {
         return false;
     }
 
-    public Object nullSafeGet(ResultSet rs, String[] names, Object owner)
+    public Object replace(Object original, Object target, Object owner) throws HibernateException {
+        return original;
+    }
+
+    public Class<?> returnedClass() {
+        return BoundingBox.class;
+    }
+
+    private static final int[] SQLTYPES =
+            new int[] {Types.DOUBLE, Types.DOUBLE, Types.DOUBLE, Types.DOUBLE, Types.VARCHAR};
+
+    public int[] sqlTypes() {
+        return SQLTYPES;
+    }
+
+    @Override
+    public Object nullSafeGet(
+            ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner)
             throws HibernateException, SQLException {
 
         double minx = rs.getDouble(names[0]);
@@ -116,9 +136,11 @@ public class BoundingBoxType implements UserType, ParameterizedType {
         return re;
     }
 
-    public void nullSafeSet(PreparedStatement st, Object value, int index)
+    @Override
+    public void nullSafeSet(
+            PreparedStatement st, Object value, int index, SharedSessionContractImplementor session)
             throws HibernateException, SQLException {
-
+        //
         BoundingBox box = (BoundingBox) value;
         if (box == null) {
             // set to null
@@ -153,20 +175,5 @@ public class BoundingBoxType implements UserType, ParameterizedType {
             st.setNull(index + 4, Types.VARCHAR);
             // st.setBlob(index + 4, (Blob) null);
         }
-    }
-
-    public Object replace(Object original, Object target, Object owner) throws HibernateException {
-        return original;
-    }
-
-    public Class<?> returnedClass() {
-        return BoundingBox.class;
-    }
-
-    private static final int[] SQLTYPES =
-            new int[] {Types.DOUBLE, Types.DOUBLE, Types.DOUBLE, Types.DOUBLE, Types.VARCHAR};
-
-    public int[] sqlTypes() {
-        return SQLTYPES;
     }
 }

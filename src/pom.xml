@@ -90,6 +90,12 @@
        <enabled>true</enabled>
      </releases>
     </repository>
+    
+    <repository>
+      <id>Hibernate Spatial repo</id>
+      <url>http://www.hibernatespatial.org/repository</url>
+    </repository>
+    
  </repositories>
 
  <dependencyManagement>
@@ -2002,7 +2008,7 @@
   <windows.leniency>true</windows.leniency>
   <gf.version>3.4.2</gf.version>
   <jasypt.version>1.9.2</jasypt.version>
-  <hibernate-version>3.6.9.Final</hibernate-version>
+  <hibernate-version>5.2.17.Final</hibernate-version>
   <hibernate-generic-dao-version>1.1.0</hibernate-generic-dao-version>
   <hibernate-spatial-version>1.1.3.1</hibernate-spatial-version>
   <hibernate-spatial-h2-version>1.1.3.1</hibernate-spatial-h2-version>
